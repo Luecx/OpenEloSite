@@ -676,6 +676,34 @@ textarea {
   border-bottom: none;
 }
 
+.member-list {
+  gap: 8px;
+}
+
+.member-list li,
+.member-list li:last-child {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border: none;
+  border-radius: 12px;
+  background: var(--surface-soft);
+}
+
+.member-list-label {
+  min-width: 0;
+}
+
+.member-list-empty {
+  color: var(--muted);
+}
+
+.member-list + .user-picker-form {
+  margin-top: 14px;
+}
+
 .checkbox-fieldset {
   margin: 0;
   padding: 14px;
@@ -1315,11 +1343,6 @@ th {
   align-items: center;
 }
 
-.versions-card .section-header > div {
-  display: grid;
-  gap: 4px;
-}
-
 .versions-create-panel {
   position: absolute;
   top: calc(100% + 8px);
@@ -1333,6 +1356,23 @@ th {
   border: 1px solid var(--line);
   background: var(--surface);
   box-shadow: var(--shadow);
+}
+
+.engine-edit-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 12;
+  min-width: min(560px, calc(100vw - 40px));
+  padding: 16px;
+  border-radius: 18px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.engine-edit-panel h2 {
+  margin-bottom: 8px;
 }
 
 .inline-editor[open] summary.button {

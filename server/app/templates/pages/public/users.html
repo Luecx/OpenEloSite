@@ -27,8 +27,8 @@
               <td>
                 <div class="role-cell">
                   <div class="tag-row">
-                    {% for item in user.roles %}
-                      <span class="tag">{{ item.role.name }}</span>
+                    {% for role_name in assigned_role_names %}
+                      <span class="tag">{{ role_name }}</span>
                     {% else %}
                       <span class="tag">{{ tr("keine") }}</span>
                     {% endfor %}

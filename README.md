@@ -62,7 +62,7 @@ Der Client ist absichtlich kein kompiliertes Binary. Man cloned das Projekt und 
 
 ## Kernideen
 
-- kombinierbare Rollen: `admin`, `tester`, `engine_owner`
+- kombinierbare Rollen: `admin`, `tester`
 - normale Web-Accounts fuer Nutzer
 - Client-Authentifizierung ueber Client-Tokens
 - Engines mit Ownern und Maintainern

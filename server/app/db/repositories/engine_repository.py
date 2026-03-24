@@ -66,17 +66,17 @@ def get_engine_for_user(db: Session, engine_id: int, user_id: int) -> Engine | N
 
 def create_engine(
     db: Session,
-    editable_user_ids: list[int],
+    owner_user_ids: list[int],
     name: str,
     description: str,
     protocol: str,
 ) -> Engine:
     normalized_user_ids: list[int] = []
-    for user_id in editable_user_ids:
+    for user_id in owner_user_ids:
         if user_id not in normalized_user_ids:
             normalized_user_ids.append(user_id)
     if not normalized_user_ids:
-        raise ValueError("editable_user_ids darf nicht leer sein")
+        raise ValueError("owner_user_ids darf nicht leer sein")
 
     engine = Engine(
         name=name.strip(),
@@ -136,7 +136,7 @@ def _artifact_required_flags(artifact: EngineArtifact) -> set[str]:
     return required
 
 
-def list_engine_editors(db: Session, engine_id: int) -> list[User]:
+def list_engine_owners(db: Session, engine_id: int) -> list[User]:
     return list(
         db.scalars(
             select(User)
@@ -147,11 +147,11 @@ def list_engine_editors(db: Session, engine_id: int) -> list[User]:
     )
 
 
-def list_engine_editors_for_engines(db: Session, engine_ids: list[int]) -> dict[int, list[User]]:
+def list_engine_owners_for_engines(db: Session, engine_ids: list[int]) -> dict[int, list[User]]:
     if not engine_ids:
         return {}
 
-    editors_by_engine: dict[int, list[User]] = defaultdict(list)
+    owners_by_engine: dict[int, list[User]] = defaultdict(list)
     rows = db.execute(
         select(EngineMembership.engine_id, User)
         .join(User, User.id == EngineMembership.user_id)
@@ -159,8 +159,8 @@ def list_engine_editors_for_engines(db: Session, engine_ids: list[int]) -> dict[
         .order_by(EngineMembership.engine_id.asc(), User.display_name.asc(), User.username.asc())
     )
     for engine_id, user in rows:
-        editors_by_engine[engine_id].append(user)
-    return dict(editors_by_engine)
+        owners_by_engine[engine_id].append(user)
+    return dict(owners_by_engine)
 
 
 def list_engine_testers(db: Session, engine_id: int) -> list[User]:
@@ -174,7 +174,7 @@ def list_engine_testers(db: Session, engine_id: int) -> list[User]:
     )
 
 
-def add_editor(db: Session, engine: Engine, user_id: int) -> None:
+def add_owner(db: Session, engine: Engine, user_id: int) -> None:
     exists = db.scalar(
         select(EngineMembership).where(
             EngineMembership.engine_id == engine.id,
@@ -204,8 +204,8 @@ def add_tester(db: Session, engine: Engine, user_id: int) -> None:
     db.refresh(engine)
 
 
-def remove_editor(db: Session, engine: Engine, user_id: int) -> bool:
-    editor_links = list(
+def remove_owner(db: Session, engine: Engine, user_id: int) -> bool:
+    owner_links = list(
         db.scalars(
             select(EngineMembership).where(
                 EngineMembership.engine_id == engine.id,
@@ -213,15 +213,10 @@ def remove_editor(db: Session, engine: Engine, user_id: int) -> bool:
             )
         )
     )
-    if not editor_links:
+    if not owner_links:
         return False
 
-    all_links = list(db.scalars(select(EngineMembership).where(EngineMembership.engine_id == engine.id)))
-    editor_ids = {item.user_id for item in all_links}
-    if len(editor_ids) <= 1:
-        return False
-
-    for item in editor_links:
+    for item in owner_links:
         db.delete(item)
     db.flush()
     db.commit()

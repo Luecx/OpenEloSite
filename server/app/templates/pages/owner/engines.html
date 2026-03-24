@@ -4,7 +4,7 @@
   <section class="section">
     <div class="section-header">
       <h1>{{ tr("Meine Engines") }}</h1>
-      <p class="muted">{{ tr("Admins legen Engines an. Zugewiesene Editoren pflegen danach Versionen und Matches.") }}</p>
+      <p class="muted">{{ tr("Admins legen Engines an. Zugewiesene Owner pflegen danach Versionen und Matches.") }}</p>
     </div>
     <div class="two-column">
       {% if can_create_engine %}
@@ -13,7 +13,7 @@
           <label><span>{{ tr("Name") }}</span><input type="text" name="name" required /></label>
           <label><span>{{ tr("Beschreibung") }}</span><textarea name="description" required></textarea></label>
           <label><span>{{ tr("Protokoll") }}</span><input type="text" name="protocol" value="uci" /></label>
-          <label><span>{{ tr("Editor Benutzername(n)") }}</span><input type="text" name="editor_usernames" placeholder="{{ tr('z. B. finn oder finn,alex') }}" /></label>
+          <label><span>{{ tr("Owner Benutzername(n)") }}</span><input type="text" name="owner_usernames" placeholder="{{ tr('z. B. finn oder finn,alex') }}" /></label>
           <button class="button" type="submit">{{ tr("Engine anlegen") }}</button>
         </form>
       {% endif %}
@@ -22,7 +22,7 @@
         <h2>{{ tr("Hinweise") }}</h2>
         <ul class="simple-list">
           <li>{{ tr("Versionen werden direkt angelegt und ohne Admin-Pruefung verwendet.") }}</li>
-          <li>{{ tr("Bearbeitungsrechte werden nur ueber Editor-Zuweisungen vergeben.") }}</li>
+          <li>{{ tr("Bearbeitungsrechte werden nur ueber die Owner-Liste vergeben.") }}</li>
           <li>{{ tr("Pro Version legst du nur den Versionsnamen fest und laedst danach passende Artifacts hoch.") }}</li>
           <li>{{ tr("Matches erzeugt der Server spaeter automatisch fuer aktive Clients.") }}</li>
         </ul>
@@ -37,7 +37,7 @@
           <tr>
             <th>{{ tr("Name") }}</th>
             <th>{{ tr("Protokoll") }}</th>
-            <th>{{ tr("Zugewiesene Editoren") }}</th>
+            <th>{{ tr("Zugewiesene Owner") }}</th>
           </tr>
         </thead>
         <tbody>
@@ -46,8 +46,8 @@
               <td><a href="/owner/engines/{{ engine.id }}">{{ engine.name }}</a></td>
               <td>{{ engine.protocol }}</td>
               <td>
-                {% for editor in engine_editors.get(engine.id, []) %}
-                  {{ editor.display_name }}{% if not loop.last %}, {% endif %}
+                {% for owner in engine_owners.get(engine.id, []) %}
+                  {{ owner.display_name }}{% if not loop.last %}, {% endif %}
                 {% else %}
                   -
                 {% endfor %}

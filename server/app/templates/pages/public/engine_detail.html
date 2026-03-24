@@ -4,77 +4,56 @@
 {% block content %}
 <section class="section">
   <a class="back-link" href="/engines">← {{ tr("Zurueck zu Engines") }}</a>
-  <div class="page-hero">
-    <div>
-      <p class="eyebrow">{{ engine.protocol }}</p>
-      <h1>{{ engine.name }}</h1>
-      <p class="hero-text">{{ engine.description }}</p>
+  <div class="page-hero page-hero--full">
+    <div class="hero-header">
+      <div>
+        <p class="eyebrow">{{ engine.protocol }}</p>
+        <h1>{{ engine.name }}</h1>
+      </div>
+      {% if can_edit_engine %}
+      <div class="action-cluster">
+        <details class="inline-editor">
+          <summary class="icon-button" title="{{ tr('Bearbeiten') }}" aria-label="{{ tr('Bearbeiten') }}">{{ icon("edit") }}</summary>
+          <div class="inline-editor-panel engine-edit-panel">
+            <form class="compact-form" method="post" action="/owner/engines/{{ engine.id }}">
+              <h2>{{ tr("Engine bearbeiten") }}</h2>
+              <label><span>{{ tr("Name") }}</span><input type="text" value="{{ engine.name }}" disabled /></label>
+              <label><span>{{ tr("Beschreibung") }}</span><textarea name="description" required>{{ engine.description }}</textarea></label>
+              <label>
+                <span>{{ tr("Protokoll") }}</span>
+                <select name="protocol">
+                  <option value="uci" {% if engine.protocol == "uci" %}selected{% endif %}>UCI</option>
+                  <option value="xboard" {% if engine.protocol == "xboard" %}selected{% endif %}>XBoard</option>
+                </select>
+              </label>
+              <div class="button-row">
+                <button class="button" type="submit">{{ tr("Engine speichern") }}</button>
+                <button class="ghost-button" type="button" data-close-inline-editor>{{ tr("Abbrechen") }}</button>
+              </div>
+            </form>
+          </div>
+        </details>
+      </div>
+      {% endif %}
     </div>
-    <div class="meta-stack">
+    <p class="hero-text">{{ engine.description }}</p>
+    <div class="meta-row hero-meta">
       <span class="meta-chip">{{ tr("Protokoll") }} {{ engine.protocol }}</span>
       <span class="meta-chip">{{ versions|length }} {{ tr("Versionen") }}</span>
+      <span class="meta-chip">{{ owner_users|length }} {{ tr("Owner") }}</span>
+      {% if tester_users %}
+      <span class="meta-chip">{{ tester_users|length }} {{ tr("Tester") }}</span>
+      {% else %}
+      <span class="meta-chip">{{ tr("Keine Einschraenkung") }}</span>
+      {% endif %}
     </div>
   </div>
 </section>
 
-{% if can_edit_engine %}
-<section class="section two-column">
-  <form class="form-card" method="post" action="/owner/engines/{{ engine.id }}">
-    <h2>{{ tr("Engine bearbeiten") }}</h2>
-    <label><span>{{ tr("Name") }}</span><input type="text" value="{{ engine.name }}" disabled /></label>
-    <label><span>{{ tr("Beschreibung") }}</span><textarea name="description" required>{{ engine.description }}</textarea></label>
-    <label>
-      <span>{{ tr("Protokoll") }}</span>
-      <select name="protocol">
-        <option value="uci" {% if engine.protocol == "uci" %}selected{% endif %}>UCI</option>
-        <option value="xboard" {% if engine.protocol == "xboard" %}selected{% endif %}>XBoard</option>
-      </select>
-    </label>
-    <button class="button" type="submit">{{ tr("Engine speichern") }}</button>
-  </form>
-
-  <article class="card">
-    <h2>{{ tr("Testen beschraenken auf folgende Nutzer:") }}</h2>
-    <p class="muted">{{ tr("Nur Clients dieser Nutzer duerfen Jobs fuer diese Engine erhalten. Leer bedeutet keine Einschraenkung.") }}</p>
-    <ul class="simple-list">
-      {% for tester in tester_users %}
-      <li>
-        {{ tester.display_name }} ({{ tester.username }})
-        <form method="post" action="/owner/engines/{{ engine.id }}/testers/{{ tester.id }}/remove" class="inline-form">
-          <button class="icon-button danger" type="submit" title="{{ tr('Tester entfernen') }}" aria-label="{{ tr('Tester entfernen') }}">{{ icon("x") }}</button>
-        </form>
-      </li>
-      {% else %}
-      <li>{{ tr("Keine Einschraenkung") }}</li>
-      {% endfor %}
-    </ul>
-    <form class="compact-form user-picker-form" method="post" action="/owner/engines/{{ engine.id }}/testers" data-user-picker>
-      <label>
-        <span>{{ tr("Tester hinzufuegen") }}</span>
-        <input type="search" name="tester_picker_query" placeholder="{{ tr('Nutzer suchen') }}" autocomplete="new-password" autocapitalize="off" spellcheck="false" data-lpignore="true" data-user-picker-search />
-      </label>
-      <input type="hidden" name="tester_username" data-user-picker-hidden />
-      <div class="user-picker-dropdown" data-user-picker-dropdown hidden>
-        {% for user in all_users %}
-        <div class="user-picker-option" data-user-picker-option data-search-text="{{ (user.display_name ~ ' ' ~ user.username)|lower }}">
-          <div class="user-picker-option-label">{{ user.display_name }} <span class="muted">({{ user.username }})</span></div>
-          <button class="icon-inline-button" type="button" data-user-picker-select="{{ user.username }}">{{ icon("plus") }}<span>{{ tr("Hinzufuegen") }}</span></button>
-        </div>
-        {% endfor %}
-        <div class="user-picker-empty" data-user-picker-empty>{{ tr("Keine Nutzer gefunden.") }}</div>
-      </div>
-    </form>
-  </article>
-</section>
-{% endif %}
-
 <section class="section">
   <div class="table-card versions-card">
     <div class="section-header">
-      <div>
-        <h2>{{ tr("Versionen") }}</h2>
-        <p class="muted">{{ tr("Jede Version enthaelt serverseitige Artifacts fuer verschiedene Systeme und CPU-Profile.") }}</p>
-      </div>
+      <h2>{{ tr("Versionen") }}</h2>
 
       {% if can_edit_engine %}
       <details class="inline-editor">
@@ -105,7 +84,7 @@
       </thead>
       <tbody>
       {% for version in versions %}
-      <tr>
+      <tr class="clickable-row" data-href="{% if can_edit_engine %}/owner/versions/{{ version.id }}{% else %}/engines/{{ engine.slug }}/versions/{{ version.id }}{% endif %}">
         <td>
           <a href="{% if can_edit_engine %}/owner/versions/{{ version.id }}{% else %}/engines/{{ engine.slug }}/versions/{{ version.id }}{% endif %}">
             {{ version.version_name }}
@@ -123,4 +102,78 @@
     </table>
   </div>
 </section>
+
+{% if can_edit_engine %}
+<section class="section two-column">
+  <article class="card">
+    <h2>{{ tr("Owner") }}</h2>
+    <p class="muted">{{ tr("Alle eingetragenen Owner koennen diese Engine bearbeiten und die Owner- sowie Tester-Liste verwalten.") }}</p>
+    <ul class="simple-list member-list">
+      {% for owner in owner_users %}
+      <li>
+        <div class="member-list-label">
+          {{ owner.display_name }} <span class="muted">({{ owner.username }})</span>
+        </div>
+        <form method="post" action="/owner/engines/{{ engine.id }}/owners/{{ owner.id }}/remove" class="inline-form">
+          <button class="icon-button danger" type="submit" title="{{ tr('Owner entfernen') }}" aria-label="{{ tr('Owner entfernen') }}">{{ icon("x") }}</button>
+        </form>
+      </li>
+      {% else %}
+      <li class="member-list-empty">{{ tr("Keine Owner vorhanden.") }}</li>
+      {% endfor %}
+    </ul>
+    <form class="compact-form user-picker-form" method="post" action="/owner/engines/{{ engine.id }}/owners" data-user-picker>
+      <label>
+        <span>{{ tr("Owner hinzufuegen") }}</span>
+        <input type="search" name="owner_picker_query" placeholder="{{ tr('Nutzer suchen') }}" autocomplete="new-password" autocapitalize="off" spellcheck="false" data-lpignore="true" data-user-picker-search />
+      </label>
+      <input type="hidden" name="owner_username" data-user-picker-hidden />
+      <div class="user-picker-dropdown" data-user-picker-dropdown hidden>
+        {% for user in all_users %}
+        <div class="user-picker-option" data-user-picker-option data-search-text="{{ (user.display_name ~ ' ' ~ user.username)|lower }}">
+          <div class="user-picker-option-label">{{ user.display_name }} <span class="muted">({{ user.username }})</span></div>
+          <button class="icon-inline-button" type="button" data-user-picker-select="{{ user.username }}">{{ icon("plus") }}<span>{{ tr("Hinzufuegen") }}</span></button>
+        </div>
+        {% endfor %}
+        <div class="user-picker-empty" data-user-picker-empty>{{ tr("Keine Nutzer gefunden.") }}</div>
+      </div>
+    </form>
+  </article>
+
+  <article class="card">
+    <h2>{{ tr("Testen beschraenken") }}</h2>
+    <p class="muted">{{ tr("Wenn du das Testen auf bestimmte Nutzer beschraenken willst, fuege sie dieser Liste hinzu. Sonst kann jeder deine Engine testen.") }}</p>
+    <ul class="simple-list member-list">
+      {% for tester in tester_users %}
+      <li>
+        <div class="member-list-label">
+          {{ tester.display_name }} <span class="muted">({{ tester.username }})</span>
+        </div>
+        <form method="post" action="/owner/engines/{{ engine.id }}/testers/{{ tester.id }}/remove" class="inline-form">
+          <button class="icon-button danger" type="submit" title="{{ tr('Tester entfernen') }}" aria-label="{{ tr('Tester entfernen') }}">{{ icon("x") }}</button>
+        </form>
+      </li>
+      {% else %}
+      <li class="member-list-empty">{{ tr("Keine Einschraenkung") }}</li>
+      {% endfor %}
+    </ul>
+    <form class="compact-form user-picker-form" method="post" action="/owner/engines/{{ engine.id }}/testers" data-user-picker>
+      <label>
+        <span>{{ tr("Tester hinzufuegen") }}</span>
+        <input type="search" name="tester_picker_query" placeholder="{{ tr('Nutzer suchen') }}" autocomplete="new-password" autocapitalize="off" spellcheck="false" data-lpignore="true" data-user-picker-search />
+      </label>
+      <input type="hidden" name="tester_username" data-user-picker-hidden />
+      <div class="user-picker-dropdown" data-user-picker-dropdown hidden>
+        {% for user in all_users %}
+        <div class="user-picker-option" data-user-picker-option data-search-text="{{ (user.display_name ~ ' ' ~ user.username)|lower }}">
+          <div class="user-picker-option-label">{{ user.display_name }} <span class="muted">({{ user.username }})</span></div>
+          <button class="icon-inline-button" type="button" data-user-picker-select="{{ user.username }}">{{ icon("plus") }}<span>{{ tr("Hinzufuegen") }}</span></button>
+        </div>
+        {% endfor %}
+        <div class="user-picker-empty" data-user-picker-empty>{{ tr("Keine Nutzer gefunden.") }}</div>
+      </div>
+    </form>
+  </article>
+</section>
+{% endif %}
 {% endblock %}

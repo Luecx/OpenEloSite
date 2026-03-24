@@ -32,6 +32,14 @@ from app.services.template_service import build_context
 router = APIRouter()
 
 
+def _editable_engine_for_user(db: Session, engine_id: int, current_user):
+    if current_user is None:
+        return None
+    if user_repository.has_role(current_user, ADMIN_ROLE):
+        return engine_repository.get_engine(db, engine_id)
+    return engine_repository.get_engine_for_user(db, engine_id, current_user.id)
+
+
 @router.get("/logo.png")
 def app_logo():
     logo_path = Path(__file__).resolve().parents[3] / "logo.png"
@@ -100,7 +108,7 @@ def engine_detail(slug: str, request: Request, db: Session = Depends(get_db), cu
     engine = engine_repository.get_public_engine_by_slug(db, slug)
     if engine is None:
         raise HTTPException(status_code=404, detail="Engine not found")
-    editable_engine = engine_repository.get_engine_for_user(db, engine.id, current_user.id) if current_user else None
+    editable_engine = _editable_engine_for_user(db, engine.id, current_user)
     versions = engine_repository.list_public_versions_for_engine(db, engine.id)
     context = build_context(
         request,
@@ -108,6 +116,7 @@ def engine_detail(slug: str, request: Request, db: Session = Depends(get_db), cu
         engine=engine,
         versions=versions,
         can_edit_engine=editable_engine is not None,
+        owner_users=engine_repository.list_engine_owners(db, engine.id),
         tester_users=engine_repository.list_engine_testers(db, engine.id),
         all_users=user_repository.list_users_for_picker(db) if editable_engine is not None else [],
         page_title=engine.name,
@@ -135,7 +144,7 @@ def version_detail(
         current_user,
         engine=engine,
         version=version,
-        can_edit_engine=bool(current_user and engine_repository.get_engine_for_user(db, engine.id, current_user.id) is not None),
+        can_edit_engine=_editable_engine_for_user(db, engine.id, current_user) is not None,
         rating_lists=catalog_repository.list_rating_lists(db),
         allowed_rating_lists=engine_repository.list_rating_lists_for_version(db, version.id),
         allowed_rating_list_ids=[item.id for item in engine_repository.list_rating_lists_for_version(db, version.id)],

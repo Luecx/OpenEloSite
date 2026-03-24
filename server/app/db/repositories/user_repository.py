@@ -9,6 +9,8 @@ from app.db.models.role import Role
 from app.db.models.user import User
 from app.db.models.user_role import UserRole
 
+HIDDEN_ROLE_NAMES = {"engine_owner"}
+
 
 def utcnow() -> datetime:
     return datetime.utcnow()
@@ -45,7 +47,13 @@ def list_users_for_picker(db: Session) -> list[User]:
 
 
 def list_roles(db: Session) -> list[Role]:
-    return list(db.scalars(select(Role).order_by(Role.name.asc())))
+    return list(
+        db.scalars(
+            select(Role)
+            .where(Role.name.not_in(HIDDEN_ROLE_NAMES))
+            .order_by(Role.name.asc())
+        )
+    )
 
 
 def get_role_by_name(db: Session, role_name: str) -> Role | None:
@@ -53,7 +61,7 @@ def get_role_by_name(db: Session, role_name: str) -> Role | None:
 
 
 def get_role_names(user: User) -> list[str]:
-    return [item.role.name for item in user.roles]
+    return [item.role.name for item in user.roles if item.role.name not in HIDDEN_ROLE_NAMES]
 
 
 def has_role(user: User, role_name: str) -> bool:

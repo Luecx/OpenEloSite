@@ -20,9 +20,7 @@ from app.db.repositories import job_repository
 from app.db.repositories import user_repository
 from app.db.session import get_db
 from app.security.current_user import get_current_user_required
-from app.security.current_user import require_role
 from app.security.role_names import ADMIN_ROLE
-from app.security.role_names import ENGINE_OWNER_ROLE
 from app.services import audit_service
 from app.services import job_service
 from app.services.job_pgn_service import build_match_pgn_archive
@@ -37,33 +35,45 @@ def _is_admin(user) -> bool:
     return user_repository.has_role(user, ADMIN_ROLE)
 
 
-def _resolve_editor_users(db: Session, raw_value: str, fallback_user) -> list:
+def _editable_engine_for_user(db: Session, engine_id: int, current_user):
+    if current_user is None:
+        return None
+    if _is_admin(current_user):
+        return engine_repository.get_engine(db, engine_id)
+    return engine_repository.get_engine_for_user(db, engine_id, current_user.id)
+
+
+def _manageable_engines_for_user(db: Session, current_user):
+    if _is_admin(current_user):
+        return engine_repository.list_public_engines(db)
+    return engine_repository.list_user_engines(db, current_user.id)
+
+
+def _resolve_owner_users(db: Session, raw_value: str, fallback_user) -> list:
     usernames = [item.strip() for item in raw_value.split(",") if item.strip()]
     if not usernames:
         return [fallback_user]
 
-    editors = []
+    owners = []
     seen_ids: set[int] = set()
     for username in usernames:
-        editor = user_repository.get_user_by_username(db, username)
-        if editor is None:
-            raise ValueError(f"Editor '{username}' nicht gefunden.")
-        if not user_repository.has_role(editor, ENGINE_OWNER_ROLE):
-            raise ValueError(f"'{username}' hat keine Engine-Owner-Rolle.")
-        if editor.id not in seen_ids:
-            seen_ids.add(editor.id)
-            editors.append(editor)
-    return editors
+        owner = user_repository.get_user_by_username(db, username)
+        if owner is None:
+            raise ValueError(f"Owner '{username}' nicht gefunden.")
+        if owner.id not in seen_ids:
+            seen_ids.add(owner.id)
+            owners.append(owner)
+    return owners
 
 
 @router.get("/engines")
-def engines_page(request: Request, db: Session = Depends(get_db), current_user=Depends(require_role(ENGINE_OWNER_ROLE))):
-    engines = engine_repository.list_user_engines(db, current_user.id)
+def engines_page(request: Request, db: Session = Depends(get_db), current_user=Depends(get_current_user_required)):
+    engines = _manageable_engines_for_user(db, current_user)
     context = build_context(
         request,
         current_user,
         engines=engines,
-        engine_editors=engine_repository.list_engine_editors_for_engines(db, [item.id for item in engines]),
+        engine_owners=engine_repository.list_engine_owners_for_engines(db, [item.id for item in engines]),
         can_create_engine=_is_admin(current_user),
         page_title="Meine Engines",
     )
@@ -75,21 +85,21 @@ def create_engine(
     name: str = Form(...),
     description: str = Form(...),
     protocol: str = Form("uci"),
-    editor_usernames: str = Form(""),
+    owner_usernames: str = Form(""),
     db: Session = Depends(get_db),
-    current_user=Depends(require_role(ENGINE_OWNER_ROLE)),
+    current_user=Depends(get_current_user_required),
 ):
     if not _is_admin(current_user):
         return redirect_to("/owner/engines", "Neue Engines koennen nur Admins anlegen.")
 
     try:
-        editors = _resolve_editor_users(db, editor_usernames, current_user)
+        owners = _resolve_owner_users(db, owner_usernames, current_user)
     except ValueError as error:
         return redirect_to("/owner/engines", str(error))
 
     engine = engine_repository.create_engine(
         db=db,
-        editable_user_ids=[item.id for item in editors],
+        owner_user_ids=[item.id for item in owners],
         name=name,
         description=description,
         protocol=protocol,
@@ -99,8 +109,8 @@ def create_engine(
 
 
 @router.get("/engines/{engine_id}")
-def engine_detail(engine_id: int, request: Request, db: Session = Depends(get_db), current_user=Depends(require_role(ENGINE_OWNER_ROLE))):
-    engine = engine_repository.get_engine_for_user(db, engine_id, current_user.id)
+def engine_detail(engine_id: int, request: Request, db: Session = Depends(get_db), current_user=Depends(get_current_user_required)):
+    engine = _editable_engine_for_user(db, engine_id, current_user)
     if engine is None:
         return redirect_to("/owner/engines", "Engine nicht gefunden.")
 
@@ -109,7 +119,7 @@ def engine_detail(engine_id: int, request: Request, db: Session = Depends(get_db
         current_user,
         engine=engine,
         versions=engine_repository.list_versions_for_engine(db, engine.id),
-        editors=engine_repository.list_engine_editors(db, engine.id),
+        owners=engine_repository.list_engine_owners(db, engine.id),
         tester_users=engine_repository.list_engine_testers(db, engine.id),
         all_users=user_repository.list_users_for_picker(db),
         can_create_engine=_is_admin(current_user),
@@ -124,9 +134,9 @@ def engine_update(
     description: str = Form(...),
     protocol: str = Form("uci"),
     db: Session = Depends(get_db),
-    current_user=Depends(require_role(ENGINE_OWNER_ROLE)),
+    current_user=Depends(get_current_user_required),
 ):
-    engine = engine_repository.get_engine_for_user(db, engine_id, current_user.id)
+    engine = _editable_engine_for_user(db, engine_id, current_user)
     if engine is None:
         return redirect_to("/owner/engines", "Engine nicht gefunden.")
 
@@ -135,44 +145,42 @@ def engine_update(
     return redirect_to(f"/owner/engines/{engine.id}", "Engine gespeichert.")
 
 
-@router.post("/engines/{engine_id}/editors")
-def add_engine_editor(
+@router.post("/engines/{engine_id}/owners")
+def add_engine_owner(
     engine_id: int,
-    username: str = Form(...),
+    owner_username: str = Form(...),
     db: Session = Depends(get_db),
-    current_user=Depends(require_role(ENGINE_OWNER_ROLE)),
+    current_user=Depends(get_current_user_required),
 ):
-    engine = engine_repository.get_engine_for_user(db, engine_id, current_user.id)
-    target_user = user_repository.get_user_by_username(db, username)
+    engine = _editable_engine_for_user(db, engine_id, current_user)
+    target_user = user_repository.get_user_by_username(db, owner_username)
     if engine is None:
         return redirect_to("/owner/engines", "Engine nicht gefunden.")
     if target_user is None:
-        return redirect_to(f"/owner/engines/{engine_id}", "Editor nicht gefunden.")
-    if not user_repository.has_role(target_user, ENGINE_OWNER_ROLE):
-        return redirect_to(f"/owner/engines/{engine_id}", "Der Nutzer braucht die Engine-Owner-Rolle.")
+        return redirect_to(f"/owner/engines/{engine_id}", "Owner nicht gefunden.")
 
-    engine_repository.add_editor(db, engine, target_user.id)
-    audit_service.log_action(db, current_user.id, "engine_editor_add", "engine", str(engine.id), "Editor hinzugefuegt.")
-    return redirect_to(f"/owner/engines/{engine.id}", "Editor hinzugefuegt.")
+    engine_repository.add_owner(db, engine, target_user.id)
+    audit_service.log_action(db, current_user.id, "engine_owner_add", "engine", str(engine.id), "Owner hinzugefuegt.")
+    return redirect_to(f"/owner/engines/{engine.id}", "Owner hinzugefuegt.")
 
 
-@router.post("/engines/{engine_id}/editors/{user_id}/remove")
-def remove_engine_editor(
+@router.post("/engines/{engine_id}/owners/{user_id}/remove")
+def remove_engine_owner(
     engine_id: int,
     user_id: int,
     db: Session = Depends(get_db),
-    current_user=Depends(require_role(ENGINE_OWNER_ROLE)),
+    current_user=Depends(get_current_user_required),
 ):
-    engine = engine_repository.get_engine_for_user(db, engine_id, current_user.id)
+    engine = _editable_engine_for_user(db, engine_id, current_user)
     if engine is None:
         return redirect_to("/owner/engines", "Engine nicht gefunden.")
 
-    removed = engine_repository.remove_editor(db, engine, user_id)
+    removed = engine_repository.remove_owner(db, engine, user_id)
     if not removed:
-        return redirect_to(f"/owner/engines/{engine.id}", "Der letzte Editor kann nicht entfernt werden.")
+        return redirect_to(f"/owner/engines/{engine.id}", "Owner nicht gefunden.")
 
-    audit_service.log_action(db, current_user.id, "engine_editor_remove", "engine", str(engine.id), f"Editor {user_id} entfernt.")
-    return redirect_to(f"/owner/engines/{engine.id}", "Editor entfernt.")
+    audit_service.log_action(db, current_user.id, "engine_owner_remove", "engine", str(engine.id), f"Owner {user_id} entfernt.")
+    return redirect_to(f"/owner/engines/{engine.id}", "Owner entfernt.")
 
 
 @router.post("/engines/{engine_id}/testers")
@@ -180,9 +188,9 @@ def add_engine_tester(
     engine_id: int,
     tester_username: str = Form(...),
     db: Session = Depends(get_db),
-    current_user=Depends(require_role(ENGINE_OWNER_ROLE)),
+    current_user=Depends(get_current_user_required),
 ):
-    engine = engine_repository.get_engine_for_user(db, engine_id, current_user.id)
+    engine = _editable_engine_for_user(db, engine_id, current_user)
     target_user = user_repository.get_user_by_username(db, tester_username)
     if engine is None:
         return redirect_to("/owner/engines", "Engine nicht gefunden.")
@@ -199,9 +207,9 @@ def remove_engine_tester(
     engine_id: int,
     user_id: int,
     db: Session = Depends(get_db),
-    current_user=Depends(require_role(ENGINE_OWNER_ROLE)),
+    current_user=Depends(get_current_user_required),
 ):
-    engine = engine_repository.get_engine_for_user(db, engine_id, current_user.id)
+    engine = _editable_engine_for_user(db, engine_id, current_user)
     if engine is None:
         return redirect_to("/owner/engines", "Engine nicht gefunden.")
 
@@ -218,9 +226,9 @@ def create_version(
     engine_id: int,
     version_name: str = Form(...),
     db: Session = Depends(get_db),
-    current_user=Depends(require_role(ENGINE_OWNER_ROLE)),
+    current_user=Depends(get_current_user_required),
 ):
-    engine = engine_repository.get_engine_for_user(db, engine_id, current_user.id)
+    engine = _editable_engine_for_user(db, engine_id, current_user)
     if engine is None:
         return redirect_to("/owner/engines", "Engine nicht gefunden.")
 
@@ -240,13 +248,13 @@ def version_detail(
     rating_list_id: int | None = None,
     opponent: str = "",
     db: Session = Depends(get_db),
-    current_user=Depends(require_role(ENGINE_OWNER_ROLE)),
+    current_user=Depends(get_current_user_required),
 ):
     version = engine_repository.get_version(db, version_id)
     if version is None:
         return redirect_to("/owner/engines", "Version nicht gefunden.")
 
-    engine = engine_repository.get_engine_for_user(db, version.engine_id, current_user.id)
+    engine = _editable_engine_for_user(db, version.engine_id, current_user)
     if engine is None:
         return redirect_to("/owner/engines", "Kein Zugriff auf diese Version.")
 
@@ -277,13 +285,13 @@ def update_version(
     version_id: int,
     version_name: str = Form(...),
     db: Session = Depends(get_db),
-    current_user=Depends(require_role(ENGINE_OWNER_ROLE)),
+    current_user=Depends(get_current_user_required),
 ):
     version = engine_repository.get_version(db, version_id)
     if version is None:
         return redirect_to("/owner/engines", "Version nicht gefunden.")
 
-    engine = engine_repository.get_engine_for_user(db, version.engine_id, current_user.id)
+    engine = _editable_engine_for_user(db, version.engine_id, current_user)
     if engine is None:
         return redirect_to("/owner/engines", "Kein Zugriff auf diese Version.")
 
@@ -301,13 +309,13 @@ def update_version_rating_lists(
     version_id: int,
     rating_list_ids: list[int] = Form(default=[]),
     db: Session = Depends(get_db),
-    current_user=Depends(require_role(ENGINE_OWNER_ROLE)),
+    current_user=Depends(get_current_user_required),
 ):
     version = engine_repository.get_version(db, version_id)
     if version is None:
         return redirect_to("/owner/engines", "Version nicht gefunden.")
 
-    engine = engine_repository.get_engine_for_user(db, version.engine_id, current_user.id)
+    engine = _editable_engine_for_user(db, version.engine_id, current_user)
     if engine is None:
         return redirect_to("/owner/engines", "Kein Zugriff auf diese Version.")
 
@@ -327,13 +335,13 @@ def create_artifact(
     required_cpu_flags: list[str] = Form(default=[]),
     upload: UploadFile = File(...),
     db: Session = Depends(get_db),
-    current_user=Depends(require_role(ENGINE_OWNER_ROLE)),
+    current_user=Depends(get_current_user_required),
 ):
     version = engine_repository.get_version(db, version_id)
     if version is None:
         return redirect_to("/owner/engines", "Version nicht gefunden.")
 
-    engine = engine_repository.get_engine_for_user(db, version.engine_id, current_user.id)
+    engine = _editable_engine_for_user(db, version.engine_id, current_user)
     if engine is None:
         return redirect_to("/owner/engines", "Kein Zugriff auf diese Version.")
 
@@ -357,7 +365,7 @@ def artifact_detail(
     artifact_id: int,
     request: Request,
     db: Session = Depends(get_db),
-    current_user=Depends(require_role(ENGINE_OWNER_ROLE)),
+    current_user=Depends(get_current_user_required),
 ):
     artifact = engine_repository.get_artifact(db, artifact_id)
     if artifact is None:
@@ -365,7 +373,7 @@ def artifact_detail(
     version = artifact.engine_version
     if version is None:
         return redirect_to("/owner/engines", "Artifact ohne Version.")
-    engine = engine_repository.get_engine_for_user(db, version.engine_id, current_user.id)
+    engine = _editable_engine_for_user(db, version.engine_id, current_user)
     if engine is None:
         return redirect_to("/owner/engines", "Kein Zugriff auf dieses Artifact.")
 
@@ -386,7 +394,7 @@ def update_artifact(
     system_name: str = Form(...),
     required_cpu_flags: list[str] = Form(default=[]),
     db: Session = Depends(get_db),
-    current_user=Depends(require_role(ENGINE_OWNER_ROLE)),
+    current_user=Depends(get_current_user_required),
 ):
     artifact = engine_repository.get_artifact(db, artifact_id)
     if artifact is None:
@@ -394,7 +402,7 @@ def update_artifact(
     version = artifact.engine_version
     if version is None:
         return redirect_to("/owner/engines", "Artifact ohne Version.")
-    engine = engine_repository.get_engine_for_user(db, version.engine_id, current_user.id)
+    engine = _editable_engine_for_user(db, version.engine_id, current_user)
     if engine is None:
         return redirect_to("/owner/engines", "Kein Zugriff auf dieses Artifact.")
 
@@ -407,7 +415,7 @@ def update_artifact(
 def delete_artifact(
     artifact_id: int,
     db: Session = Depends(get_db),
-    current_user=Depends(require_role(ENGINE_OWNER_ROLE)),
+    current_user=Depends(get_current_user_required),
 ):
     artifact = engine_repository.get_artifact(db, artifact_id)
     if artifact is None:
@@ -415,7 +423,7 @@ def delete_artifact(
     version = artifact.engine_version
     if version is None:
         return redirect_to("/owner/engines", "Artifact ohne Version.")
-    engine = engine_repository.get_engine_for_user(db, version.engine_id, current_user.id)
+    engine = _editable_engine_for_user(db, version.engine_id, current_user)
     if engine is None:
         return redirect_to("/owner/engines", "Kein Zugriff auf dieses Artifact.")
 
@@ -429,10 +437,10 @@ def delete_artifact(
 def create_match(
     version_id: int,
     db: Session = Depends(get_db),
-    current_user=Depends(require_role(ENGINE_OWNER_ROLE)),
+    current_user=Depends(get_current_user_required),
 ):
     version = engine_repository.get_version(db, version_id)
-    if version is None or engine_repository.get_engine_for_user(db, version.engine_id, current_user.id) is None:
+    if version is None or _editable_engine_for_user(db, version.engine_id, current_user) is None:
         return redirect_to("/owner/engines", "Version nicht gefunden.")
 
     return redirect_to(f"/owner/versions/{version.id}", "Matches werden automatisch vom Matchmaker erstellt.")
@@ -501,17 +509,17 @@ def delete_job(
 def download_match_pgn_zip(
     match_id: int,
     db: Session = Depends(get_db),
-    current_user=Depends(require_role(ENGINE_OWNER_ROLE)),
+    current_user=Depends(get_current_user_required),
 ):
     match = job_repository.get_match(db, match_id)
     owns_primary = (
         match is not None
-        and engine_repository.get_engine_for_user(db, match.engine_version.engine_id, current_user.id) is not None
+        and _editable_engine_for_user(db, match.engine_version.engine_id, current_user) is not None
     )
     owns_opponent = (
         match is not None
         and match.opponent_version is not None
-        and engine_repository.get_engine_for_user(db, match.opponent_version.engine_id, current_user.id) is not None
+        and _editable_engine_for_user(db, match.opponent_version.engine_id, current_user) is not None
     )
     if match is None or (not owns_primary and not owns_opponent):
         return redirect_to("/owner/engines", "Match nicht gefunden.")

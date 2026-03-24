@@ -22,8 +22,9 @@
               <td><a href="/users/{{ user.id }}">{{ user.display_name }}</a><br /><span class="muted">{{ user.username }} | {{ user.email }}</span></td>
               <td>{{ user.account_status }}</td>
               <td>
-                {% for item in user.roles %}
-                  <span class="tag">{{ item.role.name }}</span>
+                {% set assigned_role_names = user.roles|map(attribute='role.name')|reject('equalto', 'engine_owner')|list %}
+                {% for role_name in assigned_role_names %}
+                  <span class="tag">{{ role_name }}</span>
                 {% else %}
                   <span class="tag">{{ tr("keine") }}</span>
                 {% endfor %}
@@ -32,9 +33,9 @@
                 {% for role in roles %}
                   <form method="post" action="/admin/users/{{ user.id }}/roles" class="inline-form">
                     <input type="hidden" name="role_name" value="{{ role.name }}" />
-                    <input type="hidden" name="operation" value="{% if role.name in user.roles|map(attribute='role.name')|list %}remove{% else %}assign{% endif %}" />
+                    <input type="hidden" name="operation" value="{% if role.name in assigned_role_names %}remove{% else %}assign{% endif %}" />
                     <button type="submit" class="ghost-button">
-                      {% if role.name in user.roles|map(attribute='role.name')|list %}
+                      {% if role.name in assigned_role_names %}
                         {{ role.name }} {{ tr("Entfernen")|lower }}
                       {% else %}
                         {{ role.name }} {{ tr("Hinzufuegen")|lower }}

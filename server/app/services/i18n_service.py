@@ -308,6 +308,11 @@ _TRANSLATIONS = {
     "Engine hinzufuegen": {"en": "Add engine"},
     "Protokoll": {"en": "Protocol"},
     "Editoren": {"en": "Editors"},
+    "Owner": {"en": "Owners"},
+    "Owner hinzufuegen": {"en": "Add owner"},
+    "Owner entfernen": {"en": "Remove owner"},
+    "Keine Owner vorhanden.": {"en": "No owners available."},
+    "Owner Benutzername(n)": {"en": "Owner username(s)"},
     "Erstellen": {"en": "Create"},
     "Engine-Name suchen": {"en": "Search engine name"},
     "Alle Protokolle": {"en": "All protocols"},
@@ -374,18 +379,17 @@ _TRANSLATIONS = {
     "Fehler": {"en": "Error"},
     "Fehlgeschlagen": {"en": "Failed"},
     "Keine abgeschlossenen Jobs vorhanden.": {"en": "No finished jobs available."},
-    "Admins legen Engines an. Zugewiesene Editoren pflegen danach Versionen und Matches.": {
-        "en": "Admins create engines. Assigned editors then maintain versions and matches.",
+    "Admins legen Engines an. Zugewiesene Owner pflegen danach Versionen und Matches.": {
+        "en": "Admins create engines. Assigned owners then maintain versions and matches.",
     },
     "Neue Engine": {"en": "New engine"},
-    "Editor Benutzername(n)": {"en": "Editor username(s)"},
     "Engine anlegen": {"en": "Create engine"},
     "Hinweise": {"en": "Notes"},
     "Versionen werden direkt angelegt und ohne Admin-Pruefung verwendet.": {
         "en": "Versions are created directly and used without admin approval.",
     },
-    "Bearbeitungsrechte werden nur ueber Editor-Zuweisungen vergeben.": {
-        "en": "Edit rights are granted only through editor assignments.",
+    "Bearbeitungsrechte werden nur ueber die Owner-Liste vergeben.": {
+        "en": "Edit rights are granted only through the owner list.",
     },
     "Pro Version legst du nur den Versionsnamen fest und laedst danach passende Artifacts hoch.": {
         "en": "For each version you only set the version name and then upload matching artifacts.",
@@ -393,18 +397,15 @@ _TRANSLATIONS = {
     "Matches erzeugt der Server spaeter automatisch fuer aktive Clients.": {
         "en": "The server later creates matches automatically for active clients.",
     },
-    "Zugewiesene Editoren": {"en": "Assigned editors"},
+    "Zugewiesene Owner": {"en": "Assigned owners"},
     "Einfache Engine-Daten, Editoren und Versionen.": {
-        "en": "Basic engine data, editors, and versions.",
+        "en": "Basic engine data, owners, and versions.",
     },
     "Uebersicht": {"en": "Overview"},
     "Oeffentliche Engine-Seite": {"en": "Public engine page"},
-    "Alle eingetragenen Editoren koennen diese Engine bearbeiten.": {
-        "en": "All listed editors can edit this engine.",
+    "Alle eingetragenen Owner koennen diese Engine bearbeiten und die Owner- sowie Tester-Liste verwalten.": {
+        "en": "All listed owners can edit this engine and manage both the owner and tester lists.",
     },
-    "Keine Editoren vorhanden.": {"en": "No editors available."},
-    "Editor Benutzername": {"en": "Editor username"},
-    "Editor hinzufuegen": {"en": "Add editor"},
     "Version, Artifacts und verteilte Match-Jobs.": {"en": "Version, artifacts, and distributed match jobs."},
     "Version bearbeiten": {"en": "Edit version"},
     "Version speichern": {"en": "Save version"},
@@ -444,8 +445,12 @@ _TRANSLATIONS = {
     "Job entfernen": {"en": "Remove job"},
     "Fehler anzeigen": {"en": "Show error"},
     "Testen beschraenken auf folgende Nutzer:": {"en": "Restrict testing to following users:"},
+    "Testen beschraenken": {"en": "Restrict testing"},
     "Nur Clients dieser Nutzer duerfen Jobs fuer diese Engine erhalten. Leer bedeutet keine Einschraenkung.": {
         "en": "Only clients of these users may receive jobs for this engine. Empty means unrestricted.",
+    },
+    "Wenn du das Testen auf bestimmte Nutzer beschraenken willst, fuege sie dieser Liste hinzu. Sonst kann jeder deine Engine testen.": {
+        "en": "If you want to restrict testing to specific users, add them to this list, otherwise everyone will be able to test your engine.",
     },
     "Keine Einschraenkung": {"en": "Unrestricted"},
     "Tester hinzufuegen": {"en": "Add tester"},
