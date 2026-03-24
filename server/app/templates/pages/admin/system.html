@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <section class="section">
+    <a class="back-link" href="/admin">← {{ tr("Zurueck zu Admin") }}</a>
+    <div class="section-header">
+      <div>
+        <h1>{{ tr("Systemstatus") }}</h1>
+        <p class="muted">{{ tr("Zahlen, Jobs und Audit-Logs fuer die Plattform.") }}</p>
+      </div>
+      <div class="button-row">
+        <a class="button secondary" href="/admin/matchmaker">{{ tr("Matchmaker") }}</a>
+        <a class="button secondary" href="/admin/bench">{{ tr("Bench") }}</a>
+      </div>
+    </div>
+    <div class="card-grid">
+      <article class="card"><h3>{{ summary.engines }}</h3><p>{{ tr("Engines") }}</p></article>
+      <article class="card"><h3>{{ summary.versions }}</h3><p>{{ tr("Versionen") }}</p></article>
+      <article class="card"><h3>{{ summary.clients }}</h3><p>{{ tr("Aktive Clients") }}</p></article>
+      <article class="card"><h3>{{ summary.matches }}</h3><p>{{ tr("Matches") }}</p></article>
+    </div>
+  </section>
+
+  <section class="section two-column">
+    <article class="card">
+      <h2>{{ tr("Letzte Jobs") }}</h2>
+      <ul class="simple-list">
+        {% for item in match_jobs %}
+          <li>#{{ item.id }} | {{ item.status }} | {{ item.match.engine_version_label if item.match else "-" }} vs {{ item.match.opponent_version_label if item.match else "-" }} | {{ item.num_games }} {{ tr("Spiele") }}</li>
+        {% else %}
+          <li>{{ tr("Keine Jobs vorhanden.") }}</li>
+        {% endfor %}
+      </ul>
+    </article>
+    <article class="card">
+      <h2>{{ tr("Audit-Logs") }}</h2>
+      <ul class="simple-list">
+        {% for item in logs %}
+          <li>{{ item.created_at.strftime("%Y-%m-%d %H:%M") }} | {{ item.action }} | {{ item.message }}</li>
+        {% else %}
+          <li>{{ tr("Keine Logs vorhanden.") }}</li>
+        {% endfor %}
+      </ul>
+    </article>
+  </section>
+{% endblock %}

@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <section class="section">
+    <a class="back-link" href="/admin">← {{ tr("Zurueck zu Admin") }}</a>
+    <div class="section-header">
+      <div>
+        <h1>{{ tr("Matchmaker") }}</h1>
+        <p class="muted">{{ tr("Top 20 der wahrscheinlichsten naechsten Matches fuer den ausgewaehlten Nutzer.") }}</p>
+      </div>
+    </div>
+
+    <form method="get" action="/admin/matchmaker" class="filter-bar">
+      <label>
+        <span>{{ tr("Nutzer") }}</span>
+        <select name="user_id">
+          {% for item in users %}
+            <option value="{{ item.id }}" {% if item.id == preview_user.id %}selected{% endif %}>{{ item.display_name }} ({{ item.username }})</option>
+          {% endfor %}
+        </select>
+      </label>
+      <button class="button" type="submit">{{ tr("Anzeigen") }}</button>
+    </form>
+  </section>
+
+  <section class="section">
+    <article class="panel-card">
+      <h2>{{ tr("Aktiver Client") }}</h2>
+      {% if preview_client %}
+        <p class="muted">
+          <a href="/clients/{{ preview_client.id }}">{{ preview_client.machine_name }}</a>
+          | {{ preview_client.system_name }}
+          | {{ tr("Threads") }} {{ preview_client.max_threads }}
+          | {{ tr("Hash") }} {{ preview_client.max_hash }} MB
+          | {{ tr("Syzygy") }} {{ tr(preview_client.syzygy_label) }}
+          | CPU {{ preview_client.cpu_flags or tr("keine") }}
+        </p>
+      {% else %}
+        <p class="muted">{{ tr("Kein aktiver Client fuer diesen Nutzer gefunden.") }}</p>
+      {% endif %}
+    </article>
+  </section>
+
+  <section class="section">
+    <article class="panel-card">
+      <h2>{{ tr("Wahrscheinlichste naechste Matches") }}</h2>
+      <div class="table-card inner-table">
+        <table>
+          <thead>
+            <tr>
+              <th>{{ tr("Wahrscheinlichkeit") }}</th>
+              <th>{{ tr("Engine 1") }}</th>
+              <th>{{ tr("Engine 2") }}</th>
+              <th>{{ tr("Rating-Liste") }}</th>
+              <th>{{ tr("Settings") }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in preview_rows %}
+              <tr>
+                <td>{{ "%.2f"|format(item.probability * 100) }}%</td>
+                <td><a href="/engines/{{ item.engine_1_version.engine.slug }}/versions/{{ item.engine_1_version.id }}">{{ item.engine_1_version.display_name }}</a></td>
+                <td><a href="/engines/{{ item.engine_2_version.engine.slug }}/versions/{{ item.engine_2_version.id }}">{{ item.engine_2_version.display_name }}</a></td>
+                <td><a href="/rating-lists/{{ item.rating_list.slug }}">{{ item.rating_list.name }}</a></td>
+                <td>{{ item.rating_list.time_control_label }} | {{ tr("Threads") }} {{ item.rating_list.threads_per_engine }} | {{ tr("Hash") }} {{ item.rating_list.hash_per_engine }} MB | {{ tr("Syzygy") }} {{ tr(item.rating_list.syzygy_label) }}</td>
+              </tr>
+            {% else %}
+              <tr>
+                <td colspan="5">{{ tr("Keine Matchmaker-Kandidaten verfuegbar.") }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </article>
+  </section>
+{% endblock %}

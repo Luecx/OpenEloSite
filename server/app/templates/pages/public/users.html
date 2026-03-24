@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <section class="section">
+    <div class="section-header">
+      <h1>{{ tr("Users") }}</h1>
+      <p class="muted">{{ tr("Alle Nutzer mit Rollen, Engines und aktiven Clients.") }}</p>
+    </div>
+    <div class="table-card">
+      <table>
+        <thead>
+          <tr>
+            <th>{{ tr("Nutzer") }}</th>
+            <th>{{ tr("Rollen") }}</th>
+            <th>{{ tr("Engines") }}</th>
+            <th>{{ tr("Aktive Clients") }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for user in users %}
+            {% set assigned_role_names = user_role_names_by_user.get(user.id, []) %}
+            <tr>
+              <td>
+                <a href="{{ '/profile' if current_user and current_user.id == user.id else '/users/' ~ user.id }}">{{ user.display_name }}</a><br />
+                <span class="muted">{{ user.username }} | {{ user.email }}</span>
+              </td>
+              <td>
+                <div class="role-cell">
+                  <div class="tag-row">
+                    {% for item in user.roles %}
+                      <span class="tag">{{ item.role.name }}</span>
+                    {% else %}
+                      <span class="tag">{{ tr("keine") }}</span>
+                    {% endfor %}
+                  </div>
+                  {% if "admin" in role_names %}
+                    <details class="inline-editor">
+                      <summary class="ghost-button">{{ tr("Bearbeiten") }}</summary>
+                      <div class="inline-editor-panel">
+                        {% for role in roles %}
+                          <form method="post" action="/admin/users/{{ user.id }}/roles" class="inline-form">
+                            <input type="hidden" name="role_name" value="{{ role.name }}" />
+                            <input type="hidden" name="operation" value="{% if role.name in assigned_role_names %}remove{% else %}assign{% endif %}" />
+                            <button type="submit" class="ghost-button">
+                              {% if role.name in assigned_role_names %}
+                                {{ tr("Entfernen") }} {{ role.name }}
+                              {% else %}
+                                {{ tr("Hinzufuegen") }} {{ role.name }}
+                              {% endif %}
+                            </button>
+                          </form>
+                        {% endfor %}
+                      </div>
+                    </details>
+                  {% endif %}
+                </div>
+              </td>
+              <td>{{ user.editable_engine_links|length }}</td>
+              <td>
+                {% set user_active_clients = active_clients_by_user.get(user.id, []) %}
+                {% if user_active_clients %}
+                  {% for client in user_active_clients %}
+                    <a href="/clients/{{ client.id }}">{{ client.machine_name }}</a>{% if not loop.last %}, {% endif %}
+                  {% endfor %}
+                {% else %}
+                  0
+                {% endif %}
+              </td>
+            </tr>
+          {% else %}
+            <tr>
+              <td colspan="4">{{ tr("No users found.") }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+{% endblock %}

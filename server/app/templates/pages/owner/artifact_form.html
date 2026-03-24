@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% from "components/icons.html" import icon %}
+
+{% block content %}
+  <section class="section">
+    <a class="back-link" href="/owner/versions/{{ version.id }}">← {{ tr("Zurueck zur Version") }}</a>
+    <div class="form-card">
+      <div class="section-header compact">
+        <h1>{{ tr("Artifact bearbeiten") }}</h1>
+        <form method="post" action="/owner/artifacts/{{ artifact.id }}/delete" class="inline-form">
+          <button class="icon-button danger" type="submit" title="{{ tr('Artifact entfernen') }}" aria-label="{{ tr('Artifact entfernen') }}">{{ icon("x") }}</button>
+        </form>
+      </div>
+      <div class="detail-inline-grid">
+        <div><strong>{{ tr("Datei") }}:</strong> {{ artifact.file_name }}</div>
+        <div><strong>{{ tr("Hash") }}:</strong> <code>{{ artifact.content_hash }}</code></div>
+      </div>
+      <form method="post" action="/owner/artifacts/{{ artifact.id }}" class="stack">
+        <label>
+          <span>{{ tr("System") }}</span>
+          <select name="system_name">
+            <option value="linux" {% if artifact.system_name == 'linux' %}selected{% endif %}>Linux</option>
+            <option value="windows" {% if artifact.system_name == 'windows' %}selected{% endif %}>Windows</option>
+            <option value="darwin" {% if artifact.system_name == 'darwin' %}selected{% endif %}>Darwin</option>
+          </select>
+        </label>
+        <fieldset class="checkbox-fieldset">
+          <legend>{{ tr("Benoetigte CPU-Flags") }}</legend>
+          <label class="checkbox-row"><input type="checkbox" name="required_cpu_flags" value="sse4" {% if artifact.requires_sse4 %}checked{% endif %} /> SSE4</label>
+          <label class="checkbox-row"><input type="checkbox" name="required_cpu_flags" value="avx" {% if artifact.requires_avx %}checked{% endif %} /> AVX</label>
+          <label class="checkbox-row"><input type="checkbox" name="required_cpu_flags" value="avx2" {% if artifact.requires_avx2 %}checked{% endif %} /> AVX2</label>
+          <label class="checkbox-row"><input type="checkbox" name="required_cpu_flags" value="pext" {% if artifact.requires_pext %}checked{% endif %} /> PEXT</label>
+          <label class="checkbox-row"><input type="checkbox" name="required_cpu_flags" value="avx512" {% if artifact.requires_avx512 %}checked{% endif %} /> AVX-512</label>
+        </fieldset>
+        <div class="button-row">
+          <button class="button" type="submit">{{ tr("Speichern") }}</button>
+          <a class="ghost-button link-button" href="/owner/versions/{{ version.id }}">{{ tr("Abbrechen") }}</a>
+        </div>
+      </form>
+    </div>
+  </section>
+{% endblock %}

@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <section class="section">
+    <div class="section-header">
+      <h1>{{ tr("Profil") }}</h1>
+      <p class="muted">{{ tr("Account, Rollen, Client-Tokens, eigene Clients und Engines.") }}</p>
+    </div>
+    <div class="two-column">
+      <form class="form-card" method="post" action="/profile">
+        <h2>{{ tr("Stammdaten") }}</h2>
+        <label>
+          <span>{{ tr("Benutzername") }}</span>
+          <input type="text" value="{{ current_user.username }}" disabled />
+        </label>
+        <label>
+          <span>{{ tr("Anzeigename") }}</span>
+          <input type="text" name="display_name" value="{{ current_user.display_name }}" required />
+        </label>
+        <label>
+          <span>{{ tr("E-Mail") }}</span>
+          <input type="email" value="{{ current_user.email }}" disabled />
+        </label>
+        <label>
+          <span>{{ tr("Bio") }}</span>
+          <textarea name="bio">{{ current_user.bio or "" }}</textarea>
+        </label>
+        <label>
+          <span>{{ tr("GitHub") }}</span>
+          <input type="url" name="github_url" value="{{ current_user.github_url or "" }}" />
+        </label>
+        <label>
+          <span>{{ tr("Organisation") }}</span>
+          <input type="text" name="organization" value="{{ current_user.organization or "" }}" />
+        </label>
+        <button class="button" type="submit">{{ tr("Profil speichern") }}</button>
+      </form>
+
+      <div class="stack">
+        <article class="card">
+          <h2>{{ tr("Rollen") }}</h2>
+          <div class="tag-row">
+            {% for role_name in role_names %}
+              <span class="tag">{{ role_name }}</span>
+            {% else %}
+              <span class="tag">{{ tr("keine Rollen") }}</span>
+            {% endfor %}
+          </div>
+          <p class="muted">{{ tr("Rollen werden aktuell direkt von Admins vergeben.") }}</p>
+        </article>
+
+        <article class="card">
+          <h2>{{ tr("Status") }}</h2>
+          <p>{{ tr("Account") }}: {{ current_user.account_status }}</p>
+          <p>{{ tr("Erstellt") }}: {{ current_user.created_at.strftime("%Y-%m-%d %H:%M") }}</p>
+          <p>{{ tr("Letzte Aktivitaet") }}: {{ current_user.last_active_at.strftime("%Y-%m-%d %H:%M") }}</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="card">
+      <h2>{{ tr("Client-Tokens") }}</h2>
+      <form method="post" action="/profile/client-tokens" class="compact-form">
+        <label><span>{{ tr("Name") }}</span><input type="text" name="name" required /></label>
+        <button class="button secondary" type="submit">{{ tr("Client-Token erstellen") }}</button>
+      </form>
+      {% if new_client_token %}
+        <div class="token-box"><code>{{ new_client_token }}</code></div>
+      {% endif %}
+      <ul class="token-list">
+        {% for token in client_tokens %}
+          <li class="token-row">
+            <div class="token-meta">
+              <strong>{{ token.name }}</strong>
+              <span>{{ tr("erstellt") }} {{ token.created_at.strftime("%Y-%m-%d %H:%M") }}</span>
+            </div>
+            <form method="post" action="/profile/client-tokens/{{ token.id }}/revoke" class="inline-form">
+              <button type="submit" class="ghost-button">{{ tr("Loeschen") }}</button>
+            </form>
+          </li>
+        {% else %}
+          <li>{{ tr("Keine Client-Tokens vorhanden.") }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </section>
+
+  <section class="section three-column">
+    <article class="card">
+      <h2>{{ tr("Clients") }}</h2>
+      <ul class="simple-list">
+        {% for client in my_clients %}
+          <li><a href="/clients/{{ client.id }}">{{ client.machine_name }}</a> | {{ client.max_threads }} {{ tr("Threads") }} | {{ client.max_hash }} MB {{ tr("Hash") }}</li>
+        {% else %}
+          <li>{{ tr("Keine aktiven Clients vorhanden.") }}</li>
+        {% endfor %}
+      </ul>
+    </article>
+    <article class="card">
+      <h2>{{ tr("Engines") }}</h2>
+      <ul class="simple-list">
+        {% for engine in my_engines %}
+          <li><a href="/engines/{{ engine.slug }}">{{ engine.protocol|upper }} {{ engine.name }} ({{ engine.versions|length }} {{ tr("Versionen") }})</a></li>
+        {% else %}
+          <li>{{ tr("Keine Engines vorhanden.") }}</li>
+        {% endfor %}
+      </ul>
+    </article>
+  </section>
+{% endblock %}

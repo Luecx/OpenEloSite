@@ -1,0 +1,173 @@
+{% extends "base.html" %}
+{% from "components/icons.html" import icon %}
+
+{% block content %}
+  <section class="section">
+    <a class="back-link" href="/engines/{{ engine.slug }}">← {{ tr("Zurueck zur Engine") }}</a>
+    <div class="page-hero">
+      <div>
+        <p class="eyebrow"><a href="/engines/{{ engine.slug }}">{{ engine.name }}</a></p>
+        <h1>{{ version.version_name }}</h1>
+        <p class="hero-text">{{ tr("Serverseitige Artifacts definieren diese Version fuer unterschiedliche Systeme und CPU-Profile.") }}</p>
+      </div>
+      <div class="meta-stack">
+        <span class="meta-chip">{{ version.runtime_label }}</span>
+        <span class="meta-chip">{{ version.artifacts|length }} {{ tr("Artefakte") }}</span>
+        <a class="ghost-button link-button" href="/engines/{{ engine.slug }}/versions/{{ version.id }}/insights">{{ tr("Versions-Insights") }}</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="section two-column">
+    <article class="panel-card">
+      <h2>{{ tr("Ratings in Listen") }}</h2>
+      <ul class="simple-list">
+        {% for entry in leaderboard_entries %}
+          <li>
+            <a href="/rating-lists/{{ entry.rating_list.slug }}">{{ entry.rating_list.name }}</a>
+            | {{ tr("Rang") }} {{ entry.rank_position or "-" }}
+            | {{ tr("Rating") }} {{ "%.0f"|format(entry.rating) }}
+            {% if entry.rating_lower is not none and entry.rating_upper is not none %}
+              | {{ tr("95% CI") }} +- {{ "%.1f"|format((entry.rating_upper - entry.rating_lower) / 2.0) }}
+            {% endif %}
+            | {{ tr("Spiele") }} {{ entry.games_played }}
+          </li>
+        {% else %}
+          <li>{{ tr("Diese Version ist noch in keiner oeffentlichen Rating-Liste vertreten.") }}</li>
+        {% endfor %}
+      </ul>
+    </article>
+
+    <article class="panel-card">
+      <h2>{{ tr("Present in rating lists") }}</h2>
+      <div class="checklist-grid">
+        {% for item in rating_lists %}
+          <label class="checkbox-row">
+            <input type="checkbox" {% if item.id in allowed_rating_list_ids %}checked{% endif %} disabled />
+            <a href="/rating-lists/{{ item.slug }}">{{ item.name }}</a>
+          </label>
+        {% else %}
+          <p class="muted">{{ tr("Keine Rating-Listen vorhanden.") }}</p>
+        {% endfor %}
+      </div>
+    </article>
+
+    <article class="panel-card">
+      <h2>{{ tr("Artefakte") }}</h2>
+      <div class="table-card inner-table">
+        <table>
+          <thead>
+            <tr>
+              <th>{{ tr("Datei") }}</th>
+              <th>{{ tr("System") }}</th>
+              <th>{{ tr("CPU-Flags") }}</th>
+              <th>{{ tr("Hash") }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for artifact in version.artifacts %}
+              <tr>
+                <td>{{ artifact.file_name }}</td>
+                <td>{{ artifact.system_name }}</td>
+                <td>{{ artifact.required_flag_labels|join(", ") if artifact.required_flag_labels else tr("keine CPU-Flags") }}</td>
+                <td><code>{{ artifact.content_hash[:12] }}</code></td>
+              </tr>
+            {% else %}
+              <tr>
+                <td colspan="4">{{ tr("Keine Artifacts vorhanden.") }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </article>
+  </section>
+
+  <section class="section">
+    <div class="section-header">
+      <h2>{{ tr("Matches") }}</h2>
+      <p class="muted">{{ tr("Der Matchmaker erzeugt diese Matches automatisch. Der Download enthaelt die PGN-ZIPs aller fertigen Jobs.") }}</p>
+    </div>
+    <form method="get" action="/engines/{{ engine.slug }}/versions/{{ version.id }}" class="filter-bar">
+      <select name="rating_list_id">
+        <option value="">{{ tr("Alle Rating-Listen") }}</option>
+        {% for item in rating_lists %}
+          <option value="{{ item.id }}" {% if selected_rating_list_id == item.id %}selected{% endif %}>{{ item.name }}</option>
+        {% endfor %}
+      </select>
+      <input type="text" name="opponent" value="{{ opponent_query }}" placeholder="{{ tr('Gegner suchen') }}" />
+      <button class="button" type="submit">{{ tr("Filtern") }}</button>
+    </form>
+
+    <div class="table-card">
+      <table>
+        <thead>
+          <tr>
+            <th>{{ tr("Gegner") }}</th>
+            <th>W</th>
+            <th>D</th>
+            <th>L</th>
+            <th>{{ tr("Spiele") }}</th>
+            <th>{{ tr("Jobs") }}</th>
+            <th>{{ tr("Settings") }}</th>
+            <th>{{ tr("Book") }}</th>
+            <th>{{ tr("Rating-Liste") }}</th>
+            <th>{{ tr("PGN ZIPs") }}</th>
+            <th>{{ tr("Insights") }}</th>
+            {% if can_edit_engine %}
+              <th></th>
+            {% endif %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in matches %}
+            {% set is_primary = item.engine_version_id == version.id %}
+            <tr class="clickable-row" data-href="/matches/{{ item.id }}">
+              <td>
+                {% if is_primary %}
+                  <a href="/engines/{{ item.opponent_version.engine.slug }}/versions/{{ item.opponent_version.id }}">{{ item.opponent_version_label }}</a>
+                {% else %}
+                  <a href="/engines/{{ item.engine_version.engine.slug }}/versions/{{ item.engine_version.id }}">{{ item.engine_version_label }}</a>
+                {% endif %}
+              </td>
+              <td>{{ item.wins if is_primary else item.losses }}</td>
+              <td>{{ item.draws }}</td>
+              <td>{{ item.losses if is_primary else item.wins }}</td>
+              <td>{{ item.games_count }}</td>
+              <td>{{ item.job_count }}</td>
+              <td>
+                {{ item.time_control_label }}
+                {% if item.time_control_moves %}| {{ item.time_control_moves }} {{ tr("Zuege") }}{% endif %}
+                | {{ tr("Threads") }} {{ item.threads_per_engine }}
+                | {{ tr("Hash") }} {{ item.hash_per_engine }} MB
+                | {{ tr("Syzygy") }} {{ tr(item.syzygy_label) }}
+              </td>
+              <td>{{ item.opening_book.name if item.opening_book else tr("Ohne Book") }}</td>
+              <td>
+                {% if item.rating_list %}
+                  <a href="/rating-lists/{{ item.rating_list.slug }}">{{ item.rating_list.name }}</a>
+                {% else %}
+                  -
+                {% endif %}
+              </td>
+              <td><a href="/matches/{{ item.id }}/download.zip">{{ tr("PGN ZIPs") }}</a></td>
+              <td><a href="/matches/{{ item.id }}/insights">{{ tr("Insights") }}</a></td>
+              {% if can_edit_engine %}
+                <td>
+                  <form method="post" action="/owner/matches/{{ item.id }}/delete" class="inline-form">
+                    <input type="hidden" name="next_path" value="/engines/{{ engine.slug }}/versions/{{ version.id }}" />
+                    <button class="icon-button danger" type="submit" title="{{ tr('Match entfernen') }}" aria-label="{{ tr('Match entfernen') }}">{{ icon("x") }}</button>
+                  </form>
+                </td>
+              {% endif %}
+            </tr>
+          {% else %}
+            <tr>
+              <td colspan="{{ 12 if can_edit_engine else 11 }}">{{ tr("Keine Matches fuer diese Filter gefunden.") }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+{% endblock %}

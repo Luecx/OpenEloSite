@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="{{ language }}">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{{ page_title or settings.app_name }} | {{ settings.app_name }}</title>
+    <script>
+      (function () {
+        var match = document.cookie.match(/(?:^|; )openeelo_theme=([^;]+)/);
+        var theme = match ? decodeURIComponent(match[1]) : "light";
+        if (theme === "dark") {
+          document.documentElement.dataset.theme = "dark";
+        }
+      })();
+    </script>
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" href="/logo.png" type="image/png" />
+    <link rel="stylesheet" href="/static/css/app.css" />
+    {% block head %}{% endblock %}
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="site-header">
+        <div class="wrap header-grid">
+          <a class="brand-logo-link" href="/">
+            <img class="brand-logo" src="/logo.png" alt="{{ settings.app_name }}" />
+          </a>
+          <div class="topbar">
+            <div class="brand-block">
+              <a class="brand" href="/">{{ settings.app_name }}</a>
+              <p class="brand-subline">{{ tr("Engine-Versionen, Rating-Listen und Jobs mit klaren Settings.") }}</p>
+            </div>
+            <div class="account-bar">
+              {% if current_user %}
+                <div class="preference-controls">
+                  <div class="choice-group" aria-label="Theme">
+                    <button type="button" class="choice-button {% if theme == 'light' %}is-active{% endif %}" data-theme-choice="light">{{ tr("Light") }}</button>
+                    <button type="button" class="choice-button {% if theme == 'dark' %}is-active{% endif %}" data-theme-choice="dark">{{ tr("Dark") }}</button>
+                  </div>
+                  <div class="choice-group" aria-label="Language">
+                    <button type="button" class="choice-button {% if language == 'de' %}is-active{% endif %}" data-language="de">DE</button>
+                    <button type="button" class="choice-button {% if language == 'en' %}is-active{% endif %}" data-language="en">EN</button>
+                  </div>
+                </div>
+                <a class="user-pill" href="/profile">{{ current_user.display_name }}</a>
+                <form method="post" action="/auth/logout" class="inline-form">
+                  <button type="submit" class="ghost-button">{{ tr("Logout") }}</button>
+                </form>
+              {% else %}
+                <div class="preference-controls">
+                  <div class="choice-group" aria-label="Theme">
+                    <button type="button" class="choice-button {% if theme == 'light' %}is-active{% endif %}" data-theme-choice="light">{{ tr("Light") }}</button>
+                    <button type="button" class="choice-button {% if theme == 'dark' %}is-active{% endif %}" data-theme-choice="dark">{{ tr("Dark") }}</button>
+                  </div>
+                  <div class="choice-group" aria-label="Language">
+                    <button type="button" class="choice-button {% if language == 'de' %}is-active{% endif %}" data-language="de">DE</button>
+                    <button type="button" class="choice-button {% if language == 'en' %}is-active{% endif %}" data-language="en">EN</button>
+                  </div>
+                </div>
+                <a href="/auth/login" class="ghost-button link-button">{{ tr("Login") }}</a>
+                <a href="/auth/register" class="button">{{ tr("Registrierung") }}</a>
+              {% endif %}
+            </div>
+          </div>
+          <div class="nav-row">
+            <nav class="nav">
+              <a href="/">{{ tr("Start") }}</a>
+              <a href="/engines">{{ tr("Engines") }}</a>
+              <a href="/rating-lists">{{ tr("Rating-Listen") }}</a>
+              <a href="/books">{{ tr("Books") }}</a>
+              {% if current_user %}
+                <a href="/clients">{{ tr("Clients") }}</a>
+                <a href="/users">{{ tr("Users") }}</a>
+                <a href="/dashboard">{{ tr("Dashboard") }}</a>
+                <a href="/profile">{{ tr("Profil") }}</a>
+                {% if "admin" in role_names %}
+                  <a href="/admin">{{ tr("Admin") }}</a>
+                {% endif %}
+              {% endif %}
+            </nav>
+          </div>
+        </div>
+      </header>
+
+      <main class="wrap main-content">
+        {% if message %}
+          <div class="notice success">{{ message }}</div>
+        {% endif %}
+        {% if error %}
+          <div class="notice error">{{ error }}</div>
+        {% endif %}
+
+        {% block content %}{% endblock %}
+      </main>
+    </div>
+    <script>
+      (function () {
+        function setCookie(name, value) {
+          document.cookie = name + "=" + encodeURIComponent(value) + "; path=/; max-age=31536000; SameSite=Lax";
+        }
+
+        document.querySelectorAll("[data-theme-choice]").forEach(function (button) {
+          button.addEventListener("click", function () {
+            var theme = button.getAttribute("data-theme-choice");
+            document.documentElement.dataset.theme = theme;
+            setCookie("openeelo_theme", theme);
+            document.querySelectorAll("[data-theme-choice]").forEach(function (candidate) {
+              candidate.classList.toggle("is-active", candidate === button);
+            });
+          });
+        });
+
+        document.querySelectorAll("[data-language]").forEach(function (button) {
+          button.addEventListener("click", function () {
+            var language = button.getAttribute("data-language");
+            setCookie("openeelo_lang", language);
+            window.location.reload();
+          });
+        });
+
+        document.querySelectorAll("[data-user-picker]").forEach(function (picker) {
+          var search = picker.querySelector("[data-user-picker-search]");
+          var hiddenInput = picker.querySelector("[data-user-picker-hidden]");
+          var dropdown = picker.querySelector("[data-user-picker-dropdown]");
+          var options = Array.prototype.slice.call(picker.querySelectorAll("[data-user-picker-option]"));
+          var emptyState = picker.querySelector("[data-user-picker-empty]");
+          if (!search || !hiddenInput || !dropdown) {
+            return;
+          }
+
+          function applyFilter() {
+            var query = (search.value || "").trim().toLowerCase();
+            var visibleCount = 0;
+            options.forEach(function (option) {
+              var haystack = option.getAttribute("data-search-text") || "";
+              var visible = !query || haystack.indexOf(query) !== -1;
+              option.hidden = !visible;
+              if (visible) {
+                visibleCount += 1;
+              }
+            });
+            if (emptyState) {
+              emptyState.hidden = visibleCount !== 0;
+            }
+            dropdown.hidden = false;
+          }
+
+          search.addEventListener("focus", applyFilter);
+          search.addEventListener("input", applyFilter);
+
+          picker.querySelectorAll("[data-user-picker-select]").forEach(function (button) {
+            button.addEventListener("click", function () {
+              hiddenInput.value = button.getAttribute("data-user-picker-select") || "";
+              if (hiddenInput.value) {
+                picker.submit();
+              }
+            });
+          });
+
+          document.addEventListener("click", function (event) {
+            if (!picker.contains(event.target)) {
+              dropdown.hidden = true;
+            }
+          });
+        });
+
+      document.querySelectorAll("[data-close-inline-editor]").forEach(function (button) {
+        button.addEventListener("click", function () {
+          var details = button.closest("details");
+          if (details) {
+            details.open = false;
+          }
+        });
+      });
+
+      document.querySelectorAll("details.inline-editor").forEach(function (details) {
+        document.addEventListener("click", function (event) {
+          if (details.open && !details.contains(event.target)) {
+            details.open = false;
+          }
+        });
+      });
+
+      document.addEventListener("keydown", function (event) {
+        if (event.key !== "Escape") {
+          return;
+        }
+        document.querySelectorAll("details.inline-editor[open]").forEach(function (details) {
+          details.open = false;
+        });
+      });
+
+        document.querySelectorAll("[data-href]").forEach(function (element) {
+          element.addEventListener("click", function (event) {
+            if (event.target.closest("a, button, input, select, textarea, summary, form")) {
+              return;
+            }
+            window.location.href = element.getAttribute("data-href");
+          });
+        });
+      })();
+    </script>
+    {% block scripts %}{% endblock %}
+  </body>
+</html>

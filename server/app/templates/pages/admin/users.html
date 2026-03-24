@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <section class="section">
+    <div class="section-header">
+      <h1>{{ tr("Nutzerverwaltung") }}</h1>
+      <p class="muted">{{ tr("Rollen zentral verwalten und in die oeffentlichen Nutzerprofile springen.") }}</p>
+    </div>
+    <div class="table-card">
+      <table>
+        <thead>
+          <tr>
+            <th>{{ tr("Nutzer") }}</th>
+            <th>{{ tr("Status") }}</th>
+            <th>{{ tr("Rollen") }}</th>
+            <th>{{ tr("Aktionen") }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for user in users %}
+            <tr>
+              <td><a href="/users/{{ user.id }}">{{ user.display_name }}</a><br /><span class="muted">{{ user.username }} | {{ user.email }}</span></td>
+              <td>{{ user.account_status }}</td>
+              <td>
+                {% for item in user.roles %}
+                  <span class="tag">{{ item.role.name }}</span>
+                {% else %}
+                  <span class="tag">{{ tr("keine") }}</span>
+                {% endfor %}
+              </td>
+              <td>
+                {% for role in roles %}
+                  <form method="post" action="/admin/users/{{ user.id }}/roles" class="inline-form">
+                    <input type="hidden" name="role_name" value="{{ role.name }}" />
+                    <input type="hidden" name="operation" value="{% if role.name in user.roles|map(attribute='role.name')|list %}remove{% else %}assign{% endif %}" />
+                    <button type="submit" class="ghost-button">
+                      {% if role.name in user.roles|map(attribute='role.name')|list %}
+                        {{ role.name }} {{ tr("Entfernen")|lower }}
+                      {% else %}
+                        {{ role.name }} {{ tr("Hinzufuegen")|lower }}
+                      {% endif %}
+                    </button>
+                  </form>
+                {% endfor %}
+              </td>
+            </tr>
+          {% else %}
+            <tr>
+              <td colspan="4">{{ tr("Keine Nutzer vorhanden.") }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+{% endblock %}

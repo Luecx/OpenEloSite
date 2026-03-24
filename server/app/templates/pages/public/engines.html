@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block content %}
+  {% macro engine_card(engine) %}
+    <article class="engine-card">
+      <div class="engine-card-head">
+        <a class="engine-card-title" href="/engines/{{ engine.slug }}">
+          <span class="engine-card-protocol">{{ engine.protocol|upper }}</span>
+          <span>{{ engine.name }}</span>
+          <span class="engine-card-version-count">({{ engine.versions|length }} {{ tr("Versionen") }})</span>
+        </a>
+      </div>
+      <p class="engine-description">{{ engine.description }}</p>
+    </article>
+  {% endmacro %}
+
+  <section class="section">
+    <div class="section-header">
+      <div>
+        <h1>{{ tr("Engine-Liste") }}</h1>
+        <p class="muted">{{ tr("Kompakte Uebersicht mit deinen Engines zuerst und einem direkten Einstieg fuer neue Engines.") }}</p>
+      </div>
+      {% if can_create_engine %}
+        <details class="inline-editor">
+          <summary class="button secondary" role="button">{{ tr("Engine hinzufuegen") }}</summary>
+          <form method="post" action="/owner/engines" class="inline-editor-panel engine-create-panel">
+            <label><span>{{ tr("Name") }}</span><input type="text" name="name" required /></label>
+            <label><span>{{ tr("Beschreibung") }}</span><textarea name="description" required></textarea></label>
+            <label>
+              <span>{{ tr("Protokoll") }}</span>
+              <select name="protocol">
+                <option value="uci">UCI</option>
+                <option value="xboard">XBoard</option>
+              </select>
+            </label>
+            <label><span>{{ tr("Editoren") }}</span><input type="text" name="editor_usernames" placeholder="{{ tr('z. B. finn oder finn,alex') }}" /></label>
+            <button class="button" type="submit">{{ tr("Erstellen") }}</button>
+          </form>
+        </details>
+      {% endif %}
+    </div>
+    <form method="get" action="/engines" class="filter-bar">
+      <input type="text" name="q" value="{{ q }}" placeholder="{{ tr('Engine-Name suchen') }}" />
+      <select name="protocol">
+        <option value="">{{ tr("Alle Protokolle") }}</option>
+        <option value="uci" {% if protocol == "uci" %}selected{% endif %}>UCI</option>
+        <option value="xboard" {% if protocol == "xboard" %}selected{% endif %}>XBoard</option>
+      </select>
+      <button class="button" type="submit">{{ tr("Filtern") }}</button>
+    </form>
+
+    {% if my_engines %}
+      <div class="section-header compact">
+        <h2>{{ tr("Meine Engines") }}</h2>
+      </div>
+      <div class="engine-list">
+        {% for engine in my_engines %}
+          {{ engine_card(engine) }}
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    {% if all_engines or not my_engines %}
+      <div class="section-header compact {% if my_engines %}section-header-spaced{% endif %}">
+        <h2>{% if my_engines %}{{ tr("Alle Engines") }}{% else %}{{ tr("Engines") }}{% endif %}</h2>
+      </div>
+      <div class="engine-list">
+        {% for engine in all_engines %}
+          {{ engine_card(engine) }}
+        {% else %}
+          <article class="detail-card">
+            <p>{{ tr("Keine Engines passen zu den aktuellen Filtern.") }}</p>
+          </article>
+        {% endfor %}
+      </div>
+    {% endif %}
+  </section>
+{% endblock %}

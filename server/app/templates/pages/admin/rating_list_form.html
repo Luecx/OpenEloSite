@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% from "components/icons.html" import icon %}
+
+{% block content %}
+  <section class="section">
+    <a class="back-link" href="{% if rating_list %}/rating-lists/{{ rating_list.slug }}{% else %}/rating-lists{% endif %}">← {{ tr("Zurueck zu Rating-Listen") }}</a>
+    <div class="form-card">
+      <div class="section-header compact">
+        <h1>{% if rating_list %}{{ tr("Rating-Liste bearbeiten") }}{% else %}{{ tr("Neue Rating-Liste") }}{% endif %}</h1>
+        {% if rating_list %}
+          <form method="post" action="/admin/rating-lists/{{ rating_list.id }}/delete" class="inline-form">
+            <button class="icon-button danger" type="submit" title="{{ tr('Rating-Liste entfernen') }}" aria-label="{{ tr('Rating-Liste entfernen') }}">{{ icon("x") }}</button>
+          </form>
+        {% endif %}
+      </div>
+      <form
+        method="post"
+        action="{% if rating_list %}/admin/rating-lists/{{ rating_list.id }}{% else %}/admin/rating-lists{% endif %}"
+        class="stack"
+      >
+        <label><span>{{ tr("Name") }}</span><input type="text" name="name" value="{{ rating_list.name if rating_list else '' }}" required /></label>
+        <label><span>{{ tr("Beschreibung") }}</span><textarea name="description">{{ rating_list.description if rating_list else '' }}</textarea></label>
+        <label><span>{{ tr("Basis Sekunden") }}</span><input type="number" name="time_control_base_seconds" value="{{ rating_list.time_control_base_seconds if rating_list else 60 }}" min="1" required /></label>
+        <label><span>{{ tr("Inkrement Sekunden") }}</span><input type="number" name="time_control_increment_seconds" value="{{ rating_list.time_control_increment_seconds if rating_list else 1 }}" min="0" required /></label>
+        <label><span>{{ tr("Zuege optional") }}</span><input type="number" name="time_control_moves" value="{{ rating_list.time_control_moves if rating_list and rating_list.time_control_moves is not none else '' }}" min="1" /></label>
+        <label><span>{{ tr("Threads pro Engine") }}</span><input type="number" name="threads_per_engine" value="{{ rating_list.threads_per_engine if rating_list else 1 }}" min="1" required /></label>
+        <label><span>{{ tr("Hash pro Engine MB") }}</span><input type="number" name="hash_per_engine" value="{{ rating_list.hash_per_engine if rating_list else 16 }}" min="1" required /></label>
+        <label>
+          <span>{{ tr("Syzygy") }}</span>
+          <select name="syzygy_probe_limit">
+            <option value="0" {% if not rating_list or rating_list.syzygy_probe_limit == 0 %}selected{% endif %}>{{ tr("Keine Tablebases") }}</option>
+            <option value="5" {% if rating_list and rating_list.syzygy_probe_limit == 5 %}selected{% endif %}>{{ tr("Syzygy 3-4-5") }}</option>
+            <option value="6" {% if rating_list and rating_list.syzygy_probe_limit == 6 %}selected{% endif %}>{{ tr("Syzygy 6") }}</option>
+            <option value="7" {% if rating_list and rating_list.syzygy_probe_limit == 7 %}selected{% endif %}>{{ tr("Syzygy 7") }}</option>
+          </select>
+        </label>
+        <label>
+          <span>{{ tr("Book") }}</span>
+          <select name="opening_book_id">
+            <option value="">{{ tr("Keins") }}</option>
+            {% for book in books %}
+              <option value="{{ book.id }}" {% if rating_list and rating_list.opening_book_id == book.id %}selected{% endif %}>{{ book.name }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <label>
+          <span>{{ tr("Referenz-Version") }}</span>
+          <select name="anchor_engine_version_id" {% if versions %}required{% endif %}>
+            <option value="">{{ tr("Keins") }}</option>
+            {% for version in versions %}
+              <option value="{{ version.id }}" {% if rating_list and rating_list.anchor_engine_version_id == version.id %}selected{% endif %}>{{ version.display_name }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <label><span>{{ tr("Referenz-Elo") }}</span><input type="number" step="0.1" name="anchor_rating" value="{{ rating_list.anchor_rating if rating_list and rating_list.anchor_rating is not none else '' }}" {% if versions %}required{% endif %} /></label>
+        <div class="button-row">
+          <button class="button" type="submit">{{ tr("Speichern") }}</button>
+          <a class="ghost-button link-button" href="{% if rating_list %}/rating-lists/{{ rating_list.slug }}{% else %}/rating-lists{% endif %}">{{ tr("Abbrechen") }}</a>
+        </div>
+      </form>
+    </div>
+  </section>
+{% endblock %}

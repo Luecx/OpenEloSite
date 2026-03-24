@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <section class="section">
+    <div class="section-header">
+      <div>
+        <h1>{{ tr("Admin") }}</h1>
+        <p class="muted">{{ tr("Zentraler Einstieg fuer Matchmaker, Bench, Nutzer und Katalog.") }}</p>
+      </div>
+    </div>
+    <div class="card-grid">
+      <a class="card" href="/admin/system">
+        <h2>{{ tr("Systemstatus") }}</h2>
+        <p class="muted">{{ tr("Plattformzahlen, Jobs und Audit-Logs.") }}</p>
+      </a>
+      <a class="card" href="/admin/matchmaker">
+        <h2>{{ tr("Matchmaker") }}</h2>
+        <p class="muted">{{ tr("Wahrscheinlichkeiten und naechste Paarungen pro Nutzer.") }}</p>
+      </a>
+      <a class="card" href="/admin/bench">
+        <h2>{{ tr("Bench") }}</h2>
+        <p class="muted">{{ tr("Referenz-Bench und Bench-Artifacts verwalten.") }}</p>
+      </a>
+      <a class="card" href="/users">
+        <h2>{{ tr("Users") }}</h2>
+        <p class="muted">{{ tr("Rollen, Profile und aktive Nutzerclients.") }}</p>
+      </a>
+      <a class="card" href="/rating-lists">
+        <h2>{{ tr("Rating-Listen") }}</h2>
+        <p class="muted">{{ tr("Zeitkontrollen, Hash, Threads und Books.") }}</p>
+      </a>
+      <a class="card" href="/books">
+        <h2>{{ tr("Books") }}</h2>
+        <p class="muted">{{ tr("Opening-Books hochladen, bearbeiten und loeschen.") }}</p>
+      </a>
+    </div>
+    <div class="card-grid section-header-spaced">
+      <article class="card">
+        <h2>{{ summary.engines }}</h2>
+        <p class="muted">{{ tr("Engines") }}</p>
+      </article>
+      <article class="card">
+        <h2>{{ summary.versions }}</h2>
+        <p class="muted">{{ tr("Versionen") }}</p>
+      </article>
+      <article class="card">
+        <h2>{{ summary.clients }}</h2>
+        <p class="muted">{{ tr("Aktive Clients") }}</p>
+      </article>
+      <article class="card">
+        <h2>{{ summary.matches }}</h2>
+        <p class="muted">{{ tr("Matches") }}</p>
+      </article>
+    </div>
+  </section>
+{% endblock %}

@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+{% from "components/icons.html" import icon %}
+
+{% block content %}
+  <section class="section">
+    <a class="back-link" href="{{ back_url }}">← {{ tr(back_label) }}</a>
+    <div class="page-hero compact-hero">
+      <div>
+        <p class="eyebrow">{{ tr(insights_kind) }}</p>
+        <h1>{{ insights_title }}</h1>
+        <p class="hero-text">{{ tr(insights_subtitle) }}</p>
+      </div>
+      <div class="meta-stack">
+        <div class="meta-chip">{{ tr("Quelle") }}: {{ tr(insights_source_label) }}</div>
+        <a class="ghost-button link-button" href="{{ insights_download_url }}">{{ tr(insights_download_label or "PGN herunterladen") }}</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div
+      class="panel-card analytics-shell"
+      data-pgn-insights
+      data-pgn-url="{{ insights_pgn_url }}"
+      data-source-label="{{ insights_source_label }}"
+      data-loading-label="{{ tr('PGNs werden geladen...') }}"
+      data-processing-label="{{ tr('PGNs werden verarbeitet...') }}"
+      data-complete-label="{{ tr('Analyse fertig.') }}"
+      data-empty-label="{{ tr('Keine PGN-Daten vorhanden.') }}"
+      data-label-games="{{ tr('Spiele') }}"
+      data-label-plies="{{ tr('Plies') }}"
+      data-label-engines="{{ tr('Engines') }}"
+      data-label-average-plies="{{ tr('Plies pro Partie') }}"
+      data-label-skipped="{{ tr('Uebersprungen') }}"
+      data-label-points="{{ tr('Punkte') }}"
+      data-plot-empty-label="{{ tr('Keine geeigneten Plot-Daten vorhanden.') }}"
+    >
+      <div class="analytics-progress-block">
+        <div class="section-header">
+          <h2>{{ tr("Analyse") }}</h2>
+          <p class="muted" data-analytics-status>{{ tr("PGNs werden geladen...") }}</p>
+        </div>
+        <div class="analytics-progress-track" aria-hidden="true">
+          <div class="analytics-progress-bar" data-analytics-progress></div>
+        </div>
+      </div>
+
+      <div class="notice error" data-analytics-error hidden></div>
+
+      <div class="analytics-results" data-analytics-results hidden>
+        <section class="analytics-section">
+          <div class="section-header">
+            <div>
+              <h2>{{ tr("Plot") }}</h2>
+              <p class="muted">{{ tr("Waehle Achsen, um den Engine-Verlauf ueber die Partie grafisch darzustellen.") }}</p>
+            </div>
+            <div class="analytics-settings-anchor">
+              <button
+                type="button"
+                class="icon-button"
+                data-plot-settings-toggle
+                title="{{ tr('Bounds einstellen') }}"
+                aria-label="{{ tr('Bounds einstellen') }}"
+                aria-expanded="false"
+              >{{ icon("sliders") }}</button>
+              <div class="analytics-settings-panel" data-plot-settings-panel hidden>
+                <div class="analytics-settings-grid">
+                  <label>
+                    <span>{{ tr("X min") }}</span>
+                    <input type="number" step="any" placeholder="{{ tr('Auto') }}" data-plot-x-min />
+                  </label>
+                  <label>
+                    <span>{{ tr("X max") }}</span>
+                    <input type="number" step="any" placeholder="{{ tr('Auto') }}" data-plot-x-max />
+                  </label>
+                  <label>
+                    <span>{{ tr("Y min") }}</span>
+                    <input type="number" step="any" placeholder="{{ tr('Auto') }}" data-plot-y-min />
+                  </label>
+                  <label>
+                    <span>{{ tr("Y max") }}</span>
+                    <input type="number" step="any" placeholder="{{ tr('Auto') }}" data-plot-y-max />
+                  </label>
+                </div>
+                <div class="button-row">
+                  <button type="button" class="ghost-button" data-plot-bounds-reset>{{ tr("Auto") }}</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="analytics-plot-controls">
+            <label>
+              <span>{{ tr("X-Achse") }}</span>
+              <select data-plot-x-axis></select>
+            </label>
+            <label>
+              <span>{{ tr("Y-Achse") }}</span>
+              <select data-plot-y-axis></select>
+            </label>
+            <label class="checkbox-row analytics-plot-toggle">
+              <input type="checkbox" data-plot-deviation checked />
+              <span>{{ tr("Abweichung anzeigen") }}</span>
+            </label>
+          </div>
+          <div class="panel-card analytics-plot-panel">
+            <div class="analytics-plot" data-analytics-plot></div>
+          </div>
+        </section>
+
+        <section class="section-header">
+          <h2>{{ tr("Uebersicht") }}</h2>
+          <p class="muted" data-analytics-summary></p>
+        </section>
+        <div class="analytics-card-grid" data-analytics-overview></div>
+
+        <section class="analytics-section">
+          <div class="section-header">
+            <h2>{{ tr("Resultate") }}</h2>
+            <p class="muted">{{ tr("Spielausgaenge und Seitenverteilung ueber alle geladenen Partien.") }}</p>
+          </div>
+          <div class="table-card">
+            <table>
+              <thead>
+                <tr>
+                  <th>{{ tr("Weisssiege") }}</th>
+                  <th>{{ tr("Remis") }}</th>
+                  <th>{{ tr("Schwarzsiege") }}</th>
+                  <th>{{ tr("Plies pro Partie") }}</th>
+                </tr>
+              </thead>
+              <tbody data-analytics-results-table></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="analytics-section">
+          <div class="section-header">
+            <h2>{{ tr("Engines im Datensatz") }}</h2>
+            <p class="muted">{{ tr("Score und Suchmetriken auf Basis der im PGN vorhandenen Kommentardaten.") }}</p>
+          </div>
+          <div class="table-card">
+            <table>
+              <thead>
+                <tr>
+                  <th>{{ tr("Engine") }}</th>
+                  <th>{{ tr("Partien") }}</th>
+                  <th>W-D-L</th>
+                  <th>{{ tr("Punkte") }}</th>
+                  <th>{{ tr("Plies") }}</th>
+                  <th>{{ tr("Depth") }}</th>
+                  <th>{{ tr("SelDepth") }}</th>
+                  <th>{{ tr("Zeit / Zug") }}</th>
+                  <th>{{ tr("Nodes / Zug") }}</th>
+                  <th>{{ tr("NPS") }}</th>
+                  <th>{{ tr("Book-Anteil") }}</th>
+                </tr>
+              </thead>
+              <tbody data-analytics-engines-table></tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    </div>
+  </section>
+{% endblock %}
+
+{% block scripts %}
+  <script type="module" src="/static/js/analytics/page.js"></script>
+{% endblock %}

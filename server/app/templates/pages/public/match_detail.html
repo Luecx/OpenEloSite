@@ -1,0 +1,173 @@
+{% extends "base.html" %}
+{% from "components/icons.html" import icon %}
+
+{% block content %}
+  <section class="section">
+    <a class="back-link" href="/engines/{{ match.engine_version.engine.slug }}/versions/{{ match.engine_version.id }}">← {{ tr("Zurueck zur Version") }}</a>
+    <div class="page-hero compact-hero">
+      <div>
+        <p class="eyebrow">{{ tr("Match") }} #{{ match.id }}</p>
+        <h1>{{ match.engine_version_label }} vs {{ match.opponent_version_label }}</h1>
+      </div>
+      <div class="meta-stack">
+        <a class="ghost-button link-button" href="/matches/{{ match.id }}/insights">{{ tr("Match-Insights") }}</a>
+        <a class="ghost-button link-button" href="/matches/{{ match.id }}/download.zip">{{ tr("Match PGN ZIP herunterladen") }}</a>
+        {% if can_manage_match %}
+          <form method="post" action="/owner/matches/{{ match.id }}/delete" class="inline-form">
+            <input type="hidden" name="next_path" value="/engines/{{ match.engine_version.engine.slug }}/versions/{{ match.engine_version.id }}" />
+            <button class="icon-button danger" type="submit" title="{{ tr('Match entfernen') }}" aria-label="{{ tr('Match entfernen') }}">{{ icon("x") }}</button>
+          </form>
+        {% endif %}
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="table-card">
+      <table>
+        <tbody>
+          <tr>
+            <th>{{ tr("Rating-Liste") }}</th>
+            <td>{{ match.rating_list.name if match.rating_list else "-" }}</td>
+            <th>{{ tr("Zeitkontrolle") }}</th>
+            <td>{{ match.time_control_label }}</td>
+          </tr>
+          <tr>
+            <th>{{ tr("Threads") }}</th>
+            <td>{{ match.threads_per_engine }}</td>
+            <th>{{ tr("Hash") }}</th>
+            <td>{{ match.hash_per_engine }} MB</td>
+          </tr>
+          <tr>
+            <th>{{ tr("Book") }}</th>
+            <td>{{ match.opening_book.name if match.opening_book else "-" }}</td>
+            <th>{{ tr("Syzygy") }}</th>
+            <td>{{ tr(match.syzygy_label) }}</td>
+          </tr>
+          <tr>
+            <th>{{ tr("Gesamtresultat") }}</th>
+            <td>{{ match.result_text or match.status }}</td>
+            <th>BayesElo</th>
+            <td>
+              {% if match_summary.elo is not none %}
+                {{ "%.1f"|format(match_summary.elo) }} Elo +- {{ "%.1f"|format((match_summary.elo_upper - match_summary.elo_lower) / 2.0) }}
+              {% else %}
+                -
+              {% endif %}
+            </td>
+          </tr>
+          <tr>
+            <th>{{ tr("Punktquote") }}</th>
+            <td>
+              {% if match_summary.score_percent is not none %}
+                {{ "%.1f"|format(match_summary.score_percent) }}%
+              {% else %}
+                -
+              {% endif %}
+            </td>
+            <th>{{ tr("Spiele") }}</th>
+            <td>{{ match.games_count }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header">
+      <h2>{{ tr("Jobs") }}</h2>
+    </div>
+    <div class="table-card">
+      <table>
+        <thead>
+          <tr>
+            <th>{{ tr("Client") }}</th>
+            <th>{{ tr("Nutzer") }}</th>
+            <th>{{ tr("System / CPU") }}</th>
+            <th>{{ tr("Ergebnis") }}</th>
+            <th>{{ tr("Spiele") }}</th>
+            <th>{{ tr("Laufzeit") }}</th>
+            <th>{{ tr("PGN ZIP") }}</th>
+            <th>{{ tr("Fehler") }}</th>
+            {% if can_manage_match %}
+              <th></th>
+            {% endif %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for job in jobs %}
+            <tr class="{% if job.status == 'failed' %}job-row-error{% endif %}">
+              <td>
+                {% set client_name = job.client_machine_name or (job.client.machine_name if job.client else "-") %}
+                {% if job.client_id %}
+                  <a href="/clients/{{ job.client_id }}">{{ client_name }}</a>
+                {% else %}
+                  {{ client_name }}
+                {% endif %}
+                {% set client_key = job.client_machine_key or (job.client.machine_fingerprint if job.client else "") or (job.client.machine_key if job.client else "") %}
+                {% if client_key %}
+                  <div class="table-inline-meta"><code>{{ client_key }}</code></div>
+                {% endif %}
+              </td>
+              <td>
+                {% set client_user_name = job.client_user_display_name or (job.client.user.display_name if job.client and job.client.user else "-") %}
+                {% set client_user_id = job.client_user_id or (job.client.user.id if job.client and job.client.user else none) %}
+                {% if client_user_id %}
+                  <a href="/users/{{ client_user_id }}">{{ client_user_name }}</a>
+                {% else %}
+                  {{ client_user_name }}
+                {% endif %}
+              </td>
+              <td>
+                <div class="cell-stack">
+                  <span>{{ job.client_system_name or (job.client.system_name if job.client else "-") }}</span>
+                  <span class="muted">{{ (job.client_cpu_flags or (job.client.cpu_flags if job.client else "-"))|replace(",", ", ") }}</span>
+                </div>
+              </td>
+              <td>
+                {% if job.status == "failed" %}
+                  <span class="status-error">{{ tr("Fehlgeschlagen") }}</span>
+                {% else %}
+                  {{ job.result_text or job.status }}
+                {% endif %}
+              </td>
+              <td>{{ job.games_count or job.num_games }}</td>
+              <td>{{ job.runtime_seconds ~ "s" if job.runtime_seconds else "-" }}</td>
+              <td>
+                {% if job.pgn_zip_path %}
+                  <a href="/jobs/{{ job.id }}/download.zip">{{ tr("PGN ZIP") }}</a>
+                {% else %}
+                  -
+                {% endif %}
+              </td>
+              <td class="error-cell">
+                {% if job.error_text %}
+                  <details class="error-popover">
+                    <summary class="icon-button danger" title="{{ tr('Fehler anzeigen') }}" aria-label="{{ tr('Fehler anzeigen') }}">{{ icon("warning") }}</summary>
+                    <div class="error-panel">
+                      <div class="code-block compact-code">{{ job.error_text }}</div>
+                    </div>
+                  </details>
+                {% else %}
+                  -
+                {% endif %}
+              </td>
+              {% if can_manage_match %}
+                <td>
+                  <form method="post" action="/owner/jobs/{{ job.id }}/delete" class="inline-form">
+                    <input type="hidden" name="next_path" value="/matches/{{ match.id }}" />
+                    <button class="icon-button danger" type="submit" title="{{ tr('Job entfernen') }}" aria-label="{{ tr('Job entfernen') }}">{{ icon("x") }}</button>
+                  </form>
+                </td>
+              {% endif %}
+            </tr>
+          {% else %}
+            <tr>
+              <td colspan="{{ 9 if can_manage_match else 8 }}">{{ tr("Keine abgeschlossenen Jobs vorhanden.") }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+{% endblock %}

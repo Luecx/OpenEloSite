@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <section class="section">
+    <a class="back-link" href="/users">← {{ tr("Zurueck zu den Nutzern") }}</a>
+    <div class="page-hero compact-hero">
+      <div>
+        <p class="eyebrow">{{ tr("Nutzer") }}</p>
+        <h1>{{ profile_user.display_name }}</h1>
+        <p class="hero-text">{{ profile_user.bio or tr("Keine Bio.") }}</p>
+      </div>
+      <div class="meta-stack">
+        <span class="meta-chip">{{ profile_user.username }}</span>
+        <span class="meta-chip">{{ profile_user.email }}</span>
+        <span class="meta-chip">{{ profile_engines|length }} {{ tr("Engines") }}</span>
+        <span class="meta-chip">{{ profile_clients|length }} {{ tr("Aktive Clients") }}</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="section two-column">
+    <article class="panel-card">
+      <h2>{{ tr("Rollen") }}</h2>
+      <div class="tag-row">
+        {% for role_name in profile_roles %}
+          <span class="tag">{{ role_name }}</span>
+        {% else %}
+          <span class="tag">{{ tr("keine Rollen") }}</span>
+        {% endfor %}
+      </div>
+    </article>
+
+    <article class="panel-card">
+      <h2>{{ tr("Profil") }}</h2>
+      <p><strong>{{ tr("GitHub") }}:</strong> {{ profile_user.github_url or "-" }}</p>
+      <p><strong>{{ tr("Organisation") }}:</strong> {{ profile_user.organization or "-" }}</p>
+      <p><strong>{{ tr("Erstellt") }}:</strong> {{ profile_user.created_at.strftime("%Y-%m-%d %H:%M") }}</p>
+      <p><strong>{{ tr("Letzte Aktivitaet") }}:</strong> {{ profile_user.last_active_at.strftime("%Y-%m-%d %H:%M") }}</p>
+    </article>
+  </section>
+
+  <section class="section two-column">
+    <article class="panel-card">
+      <h2>{{ tr("Engines") }}</h2>
+      <ul class="compact-link-list">
+        {% for engine in profile_engines %}
+          <li><a href="/engines/{{ engine.slug }}">{{ engine.protocol|upper }} {{ engine.name }} ({{ engine.versions|length }} Versionen)</a></li>
+        {% else %}
+          <li>{{ tr("Keine Engines.") }}</li>
+        {% endfor %}
+      </ul>
+    </article>
+
+    <article class="panel-card">
+      <h2>{{ tr("Aktive Clients") }}</h2>
+      <ul class="compact-link-list">
+        {% for client in profile_clients %}
+          <li><a href="/clients/{{ client.id }}">{{ client.machine_name }}</a> | {{ client.system_name }} | {{ client.max_threads }}T / {{ client.max_hash }} MB</li>
+        {% else %}
+          <li>{{ tr("Keine aktiven Clients.") }}</li>
+        {% endfor %}
+      </ul>
+    </article>
+  </section>
+{% endblock %}

@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% from "components/icons.html" import icon %}
+
+{% block content %}
+  <section class="section">
+    <a class="back-link" href="/books">← {{ tr("Zurueck zu Books") }}</a>
+    <div class="form-card">
+      <div class="section-header compact">
+        <h1>{% if book %}{{ tr("Book bearbeiten") }}{% else %}{{ tr("Neues Book") }}{% endif %}</h1>
+        {% if book %}
+          <form method="post" action="/admin/books/{{ book.id }}/delete" class="inline-form">
+            <button class="icon-button danger" type="submit" title="{{ tr('Book entfernen') }}" aria-label="{{ tr('Book entfernen') }}">{{ icon("x") }}</button>
+          </form>
+        {% endif %}
+      </div>
+      <form
+        method="post"
+        action="{% if book %}/admin/books/{{ book.id }}{% else %}/admin/books{% endif %}"
+        {% if not book %}enctype="multipart/form-data"{% endif %}
+        class="stack"
+      >
+        <label><span>{{ tr("Name") }}</span><input type="text" name="name" value="{{ book.name if book else '' }}" required /></label>
+        <label><span>{{ tr("Beschreibung") }}</span><textarea name="description">{{ book.description if book else '' }}</textarea></label>
+        <label><span>{{ tr("Format") }}</span><input type="text" name="format_name" value="{{ book.format_name if book else 'pgn' }}" /></label>
+        {% if not book %}
+          <label><span>{{ tr("Datei") }}</span><input type="file" name="upload" required /></label>
+        {% else %}
+          <div class="detail-inline-grid">
+            <div><strong>{{ tr("Datei") }}:</strong> {{ book.file_name }}</div>
+            <div><strong>{{ tr("Hochgeladen") }}:</strong> {{ book.created_at.strftime("%Y-%m-%d %H:%M") }}</div>
+          </div>
+        {% endif %}
+        <div class="button-row">
+          <button class="button" type="submit">{{ tr("Speichern") }}</button>
+          <a class="ghost-button link-button" href="/books">{{ tr("Abbrechen") }}</a>
+        </div>
+      </form>
+    </div>
+  </section>
+{% endblock %}

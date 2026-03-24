@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% from "components/icons.html" import icon %}
+
+{% block content %}
+  <section class="section">
+    <div class="section-header">
+      <h1>{{ tr("Books") }}</h1>
+      <p class="muted">{{ tr("Der Server verwaltet die Opening-Books zentral. Clients laden ein Book nur dann herunter, wenn ein Job es braucht.") }}</p>
+      {% if "admin" in role_names %}
+        <a class="button secondary" href="/admin/books/new">{{ tr("Book hinzufuegen") }}</a>
+      {% endif %}
+    </div>
+    <form method="get" action="/books" class="filter-bar">
+      <input type="text" name="q" value="{{ q }}" placeholder="{{ tr('Book-Name oder Datei suchen') }}" />
+      <button class="button" type="submit">{{ tr("Suchen") }}</button>
+    </form>
+
+    <div class="table-card">
+      <table>
+        <thead>
+          <tr>
+            <th>{{ tr("Name") }}</th>
+            <th>{{ tr("Beschreibung") }}</th>
+            <th>{{ tr("Format") }}</th>
+            <th>{{ tr("Datei") }}</th>
+            <th>{{ tr("Hochgeladen") }}</th>
+            <th>{{ tr("Download") }}</th>
+            {% if "admin" in role_names %}
+              <th>{{ tr("Aktionen") }}</th>
+            {% endif %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in books %}
+            <tr>
+              <td>{{ item.name }}</td>
+              <td>{{ item.description or "-" }}</td>
+              <td>{{ item.format_name }}</td>
+              <td>{{ item.file_name }}</td>
+              <td>{{ item.created_at.strftime("%Y-%m-%d %H:%M") }}</td>
+              <td>
+                <a href="/books/{{ item.id }}/download">{{ tr("Download") }}</a>
+              </td>
+              {% if "admin" in role_names %}
+                <td>
+                  <div class="action-cluster">
+                    <a class="icon-button" href="/admin/books/{{ item.id }}/edit" title="{{ tr('Bearbeiten') }}" aria-label="{{ tr('Bearbeiten') }}">{{ icon("edit") }}</a>
+                    <form method="post" action="/admin/books/{{ item.id }}/delete" class="inline-form">
+                      <button class="icon-button danger" type="submit" title="{{ tr('Book entfernen') }}" aria-label="{{ tr('Book entfernen') }}">{{ icon("x") }}</button>
+                    </form>
+                  </div>
+                </td>
+              {% endif %}
+            </tr>
+          {% else %}
+            <tr>
+              <td colspan="{{ 7 if 'admin' in role_names else 6 }}">{{ tr("Keine Books gefunden.") }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+{% endblock %}

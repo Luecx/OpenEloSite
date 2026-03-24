@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+{% from "components/icons.html" import icon %}
+
+{% block content %}
+  {# ── Hero (consistent with public view) ── #}
+  <section class="section">
+    <a class="back-link" href="/engines">← {{ tr("Zurueck zu Engines") }}</a>
+    <div class="page-hero">
+      <div>
+        <p class="eyebrow">{{ engine.protocol }}</p>
+        <h1>{{ engine.name }}</h1>
+        <p class="hero-text">{{ engine.description }}</p>
+      </div>
+      <div class="meta-stack">
+        <span class="meta-chip">{{ tr("Protokoll") }}: {{ engine.protocol }}</span>
+        <span class="meta-chip">{{ versions|length }} {{ tr("Versionen") }}</span>
+        <span class="meta-chip">{{ editors|length }} {{ tr("Editoren") }}</span>
+        <a class="meta-chip" href="/engines/{{ engine.slug }}">{{ tr("Oeffentliche Seite") }} →</a>
+      </div>
+    </div>
+  </section>
+
+  {# ── Versions (above settings, add-version inline in tfoot) ── #}
+  <section class="section">
+    <div class="section-header">
+      <h2>{{ tr("Versionen") }}</h2>
+      <p class="muted">{{ tr("Jede Version enthaelt serverseitige Artifacts fuer verschiedene Systeme und CPU-Profile.") }}</p>
+    </div>
+
+    {# Form lives outside the table; tfoot inputs reference it via form= attribute #}
+    <form id="add-version-form" method="post" action="/owner/engines/{{ engine.id }}/versions"></form>
+
+    <div class="table-card">
+      <table>
+        <thead>
+          <tr>
+            <th>{{ tr("Version") }}</th>
+            <th>{{ tr("Artefakte") }}</th>
+            <th>{{ tr("Targets") }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for version in versions %}
+            <tr>
+              <td><a href="/owner/versions/{{ version.id }}">{{ version.version_name }}</a></td>
+              <td>{{ version.artifacts|length }}</td>
+              <td>{{ version.runtime_label }}</td>
+            </tr>
+          {% else %}
+            <tr>
+              <td colspan="3">{{ tr("Keine Versionen vorhanden.") }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot>
+          <tr>
+            <td colspan="3">
+              <div class="tfoot-add-row">
+                <input form="add-version-form" type="text" name="version_name"
+                       placeholder="{{ tr('Neue Version...') }}" required />
+                <button form="add-version-form" class="button" type="submit">
+                  {{ tr("+ Anlegen") }}
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </section>
+
+  {# ── Engine settings + Editors / Testers ── #}
+  <section class="section two-column">
+    <form class="form-card" method="post" action="/owner/engines/{{ engine.id }}">
+      <h2>{{ tr("Engine bearbeiten") }}</h2>
+      <label>
+        <span>{{ tr("Name") }}</span>
+        <input type="text" value="{{ engine.name }}" disabled />
+      </label>
+      <label>
+        <span>{{ tr("Beschreibung") }}</span>
+        <textarea name="description" required>{{ engine.description }}</textarea>
+      </label>
+      <label>
+        <span>{{ tr("Protokoll") }}</span>
+        <select name="protocol">
+          <option value="uci" {% if engine.protocol == "uci" %}selected{% endif %}>UCI</option>
+          <option value="xboard" {% if engine.protocol == "xboard" %}selected{% endif %}>XBoard</option>
+        </select>
+      </label>
+      <button class="button" type="submit">{{ tr("Engine speichern") }}</button>
+    </form>
+
+    <div class="stack">
+      {# Editors ── #}
+      <article class="card">
+        <h2>{{ tr("Editoren") }}</h2>
+        <p class="muted">{{ tr("Alle eingetragenen Editoren koennen diese Engine bearbeiten.") }}</p>
+        <ul class="simple-list">
+          {% for editor in editors %}
+            <li>
+              {{ editor.display_name }} ({{ editor.username }})
+              {% if editors|length > 1 %}
+                <form method="post" action="/owner/engines/{{ engine.id }}/editors/{{ editor.id }}/remove" class="inline-form">
+                  <button class="icon-button danger" type="submit"
+                          title="{{ tr('Editor entfernen') }}" aria-label="{{ tr('Editor entfernen') }}">{{ icon("x") }}</button>
+                </form>
+              {% endif %}
+            </li>
+          {% else %}
+            <li>{{ tr("Keine Editoren vorhanden.") }}</li>
+          {% endfor %}
+        </ul>
+        <form method="post" action="/owner/engines/{{ engine.id }}/editors" class="compact-form">
+          <label>
+            <span>{{ tr("Editor Benutzername") }}</span>
+            <input type="text" name="username" required />
+          </label>
+          <button class="button secondary" type="submit">{{ tr("Editor hinzufuegen") }}</button>
+        </form>
+      </article>
+
+      {# Testers ── #}
+      <article class="card">
+        <h2>{{ tr("Testen beschraenken") }}</h2>
+        <p class="muted">{{ tr("Nur Clients dieser Nutzer duerfen Jobs fuer diese Engine erhalten. Leer bedeutet keine Einschraenkung.") }}</p>
+        <ul class="simple-list">
+          {% for tester in tester_users %}
+            <li>
+              {{ tester.display_name }} ({{ tester.username }})
+              <form method="post" action="/owner/engines/{{ engine.id }}/testers/{{ tester.id }}/remove" class="inline-form">
+                <button class="icon-button danger" type="submit"
+                        title="{{ tr('Tester entfernen') }}" aria-label="{{ tr('Tester entfernen') }}">{{ icon("x") }}</button>
+              </form>
+            </li>
+          {% else %}
+            <li class="muted">{{ tr("Keine Einschraenkung aktiv") }}</li>
+          {% endfor %}
+        </ul>
+        <form class="compact-form user-picker-form" method="post" action="/owner/engines/{{ engine.id }}/testers" data-user-picker>
+          <label>
+            <span>{{ tr("Tester hinzufuegen") }}</span>
+            <input type="search" name="tester_picker_query" placeholder="{{ tr('Nutzer suchen') }}"
+                   autocomplete="new-password" autocapitalize="off" spellcheck="false"
+                   data-lpignore="true" data-user-picker-search />
+          </label>
+          <input type="hidden" name="tester_username" data-user-picker-hidden />
+          <div class="user-picker-dropdown" data-user-picker-dropdown hidden>
+            {% for user in all_users %}
+              <div class="user-picker-option" data-user-picker-option
+                   data-search-text="{{ (user.display_name ~ ' ' ~ user.username)|lower }}">
+                <div class="user-picker-option-label">
+                  {{ user.display_name }} <span class="muted">({{ user.username }})</span>
+                </div>
+                <button class="icon-inline-button" type="button" data-user-picker-select="{{ user.username }}">
+                  {{ icon("plus") }}<span>{{ tr("Hinzufuegen") }}</span>
+                </button>
+              </div>
+            {% endfor %}
+            <div class="user-picker-empty" data-user-picker-empty>{{ tr("Keine Nutzer gefunden.") }}</div>
+          </div>
+        </form>
+      </article>
+    </div>
+  </section>
+{% endblock %}

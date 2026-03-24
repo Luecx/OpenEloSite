@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% from "components/icons.html" import icon %}
+
+{% block content %}
+  <section class="section">
+    <div class="section-header">
+      <h1>{{ tr("Rating-Listen") }}</h1>
+      <p class="muted">{{ tr("Jede Liste definiert Time-Control, Threads, Hash und optional ein Opening-Book.") }}</p>
+      {% if "admin" in role_names %}
+        <a class="button secondary" href="/admin/rating-lists/new">{{ tr("Neue Rating-Liste") }}</a>
+      {% endif %}
+    </div>
+    <form method="get" action="/rating-lists" class="filter-bar">
+      <input type="text" name="q" value="{{ q }}" placeholder="{{ tr('Nach Name oder Beschreibung suchen') }}" />
+      <button class="button" type="submit">{{ tr("Suchen") }}</button>
+    </form>
+
+    <div class="rating-list-grid">
+      {% for item in rating_lists %}
+        <article class="rating-card">
+          <div class="rating-card-head">
+            <p class="eyebrow">{{ item.time_control_label }}</p>
+            {% if "admin" in role_names %}
+              <div class="action-cluster">
+                <a class="icon-button" href="/admin/rating-lists/{{ item.id }}/edit" title="{{ tr('Bearbeiten') }}" aria-label="{{ tr('Bearbeiten') }}">{{ icon("edit") }}</a>
+                <form method="post" action="/admin/rating-lists/{{ item.id }}/delete" class="inline-form">
+                  <button class="icon-button danger" type="submit" title="{{ tr('Rating-Liste entfernen') }}" aria-label="{{ tr('Rating-Liste entfernen') }}">{{ icon("x") }}</button>
+                </form>
+              </div>
+            {% endif %}
+          </div>
+          <h2><a href="/rating-lists/{{ item.slug }}">{{ item.name }}</a></h2>
+          <p class="engine-description">{{ item.description or tr("Keine Beschreibung vorhanden.") }}</p>
+          <div class="rating-card-meta">
+            <span class="meta-chip">{{ tr("Threads") }} {{ item.threads_per_engine }}</span>
+            <span class="meta-chip">{{ tr("Hash") }} {{ item.hash_per_engine }} MB</span>
+            <span class="meta-chip">{{ tr(item.syzygy_label) }}</span>
+            <span class="meta-chip">{{ item.opening_book.name if item.opening_book else tr("Ohne Book") }}</span>
+          </div>
+        </article>
+      {% else %}
+        <article class="detail-card">
+          <p>{{ tr("Keine Rating-Listen gefunden.") }}</p>
+        </article>
+      {% endfor %}
+    </div>
+  </section>
+{% endblock %}

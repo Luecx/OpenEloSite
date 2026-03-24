@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <section class="hero-panel">
+    <div class="hero-copy">
+      <p class="eyebrow">{{ tr("Open Engine Rating Platform") }}</p>
+      <h1>{{ tr("Rating-Listen sind feste Regeln. Engines und Versionen sind die Teilnehmer.") }}</h1>
+      <p class="hero-text">{{ tr("Jede Rating-Liste definiert Time-Control, Threads, Hash und optional ein Opening-Book. Engines fuehren wir ueber Versionen, Matches, verteilte Jobs und herunterladbare PGN-ZIPs.") }}</p>
+      <div class="button-row">
+        <a class="button" href="/engines">{{ tr("Engines ansehen") }}</a>
+        <a class="button secondary" href="/rating-lists">{{ tr("Rating-Listen ansehen") }}</a>
+        <a class="button secondary" href="/books">{{ tr("Books ansehen") }}</a>
+      </div>
+    </div>
+    <div class="summary-grid">
+      <article class="metric-card"><strong>{{ summary.engines }}</strong><span>{{ tr("Engines") }}</span></article>
+      <article class="metric-card"><strong>{{ summary.versions }}</strong><span>{{ tr("Versionen") }}</span></article>
+      <article class="metric-card"><strong>{{ summary.clients }}</strong><span>{{ tr("Aktive Clients") }}</span></article>
+      <article class="metric-card"><strong>{{ summary.matches }}</strong><span>{{ tr("Matches") }}</span></article>
+      <article class="metric-card"><strong>{{ rating_list_count }}</strong><span>{{ tr("Rating-Listen") }}</span></article>
+      <article class="metric-card"><strong>{{ book_count }}</strong><span>{{ tr("Books") }}</span></article>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header">
+      <h2>{{ tr("Oeffentliche Rating-Listen") }}</h2>
+      <a href="/rating-lists">{{ tr("Alle Listen") }}</a>
+    </div>
+    <div class="list-grid">
+      {% for item in rating_lists %}
+        <article class="detail-card">
+          <p class="eyebrow">{{ item.time_control_label }}</p>
+          <h3><a href="/rating-lists/{{ item.slug }}">{{ item.name }}</a></h3>
+          <p>{{ item.description or tr("Keine Beschreibung.") }}</p>
+          <div class="meta-row">
+            <span>{{ tr("Threads") }} {{ item.threads_per_engine }}</span>
+            <span>{{ tr("Hash") }} {{ item.hash_per_engine }} MB</span>
+            <span>{{ item.opening_book.name if item.opening_book else tr("Ohne Book") }}</span>
+          </div>
+        </article>
+      {% else %}
+        <article class="detail-card">
+          <p>{{ tr("Noch keine oeffentlichen Rating-Listen vorhanden.") }}</p>
+        </article>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header">
+      <h2>{{ tr("Neue Engines") }}</h2>
+      <a href="/engines">{{ tr("Engine-Verzeichnis") }}</a>
+    </div>
+    <div class="list-grid">
+      {% for engine in engines %}
+        <article class="detail-card">
+          <h3><a href="/engines/{{ engine.slug }}">{{ engine.name }}</a></h3>
+          <p>{{ engine.description }}</p>
+          <div class="meta-row">
+            <span>{{ engine.protocol }}</span>
+            <span>{{ engine.versions|length }} {{ tr("Versionen") }}</span>
+          </div>
+        </article>
+      {% else %}
+        <article class="detail-card">
+          <p>{{ tr("Noch keine Engines vorhanden.") }}</p>
+        </article>
+      {% endfor %}
+    </div>
+  </section>
+{% endblock %}

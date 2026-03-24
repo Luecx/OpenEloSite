@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <section class="section">
+    <div class="section-header">
+      <h1>Leaderboard</h1>
+      <p class="muted">{{ tr("Einfaches Rating-Board fuer freigegebene oder getestete Versionen.") }}</p>
+    </div>
+    <div class="table-card">
+      <table>
+        <thead>
+          <tr>
+            <th>{{ tr("Engine") }}</th>
+            <th>{{ tr("Version") }}</th>
+            <th>{{ tr("Rating") }}</th>
+            <th>{{ tr("Spiele") }}</th>
+            <th>W/D/L</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for entry in entries %}
+            <tr>
+              <td>{{ entry.engine.name }}</td>
+              <td>{{ entry.engine_version.version_name }}</td>
+              <td>{{ "%.0f"|format(entry.rating) }}</td>
+              <td>{{ entry.games_played }}</td>
+              <td>{{ entry.wins }}/{{ entry.draws }}/{{ entry.losses }}</td>
+            </tr>
+          {% else %}
+            <tr>
+              <td colspan="5">{{ tr("Noch keine Eintraege vorhanden.") }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+{% endblock %}

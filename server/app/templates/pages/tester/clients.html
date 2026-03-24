@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <section class="section">
+    <div class="section-header">
+      <h1>{{ tr("Clients") }}</h1>
+      <p class="muted">{{ tr("Alle aktiven Clients mit zugehoerigem User. Sobald Heartbeats ausbleiben, verschwinden sie automatisch.") }}</p>
+    </div>
+    <div class="table-card">
+      <table>
+        <thead>
+          <tr>
+            <th>{{ tr("Name") }}</th>
+            <th>{{ tr("Nutzer") }}</th>
+            <th>{{ tr("System") }}</th>
+            <th>{{ tr("Maschinen-Fingerprint") }}</th>
+            <th>{{ tr("Threads / Hash") }}</th>
+            <th>{{ tr("Letzter Kontakt") }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for client in clients %}
+            <tr>
+              <td><a href="/clients/{{ client.id }}">{{ client.machine_name }}</a></td>
+              <td><a href="/users/{{ client.user.id }}">{{ client.user.display_name }}</a></td>
+              <td>{{ client.system_name }}</td>
+              <td><code>{{ client.machine_fingerprint or client.machine_key }}</code></td>
+              <td>{{ client.max_threads }} {{ tr("Threads") }} / {{ client.max_hash }} MB</td>
+              <td>{{ client.last_seen_at.strftime("%Y-%m-%d %H:%M") if client.last_seen_at else "-" }}</td>
+            </tr>
+          {% else %}
+            <tr>
+              <td colspan="6">{{ tr("Keine aktiven Clients vorhanden.") }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+{% endblock %}

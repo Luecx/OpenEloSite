@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% from "components/icons.html" import icon %}
+
+{% block content %}
+  <section class="section">
+    <a class="back-link" href="{{ all_rating_lists_url or '/rating-lists' }}">← {{ tr("Zurueck zu Rating-Listen") }}</a>
+    <div class="page-hero page-hero--full">
+      <div class="hero-header">
+        <div>
+          <p class="eyebrow">{{ tr("Rating-Liste") }}</p>
+          <h1>{{ rating_list.name }}</h1>
+        </div>
+        {% if "admin" in role_names %}
+          <div class="action-cluster">
+            <a class="icon-button" href="/admin/rating-lists/{{ rating_list.id }}/edit" title="{{ tr('Bearbeiten') }}" aria-label="{{ tr('Bearbeiten') }}">{{ icon("edit") }}</a>
+            <form method="post" action="/admin/rating-lists/{{ rating_list.id }}/delete" class="inline-form">
+              <button class="icon-button danger" type="submit" title="{{ tr('Rating-Liste entfernen') }}" aria-label="{{ tr('Rating-Liste entfernen') }}">{{ icon("x") }}</button>
+            </form>
+          </div>
+        {% endif %}
+      </div>
+      <p class="hero-text">{{ rating_list.description or tr("Keine Beschreibung vorhanden.") }}</p>
+      <div class="meta-row hero-meta">
+        <span class="meta-chip">{{ rating_list.time_control_label }}</span>
+        <span class="meta-chip">{{ tr("Threads") }} {{ rating_list.threads_per_engine }}</span>
+        <span class="meta-chip">{{ tr("Hash") }} {{ rating_list.hash_per_engine }} MB</span>
+        <span class="meta-chip">{{ tr(rating_list.syzygy_label) }}</span>
+        <span class="meta-chip">{{ rating_list.opening_book.name if rating_list.opening_book else tr("Ohne Book") }}</span>
+        {% if rating_list.anchor_engine_version and rating_list.anchor_rating is not none %}
+          <span class="meta-chip">{{ tr("Referenz") }} {{ rating_list.anchor_engine_version.display_name }} = {{ "%.0f"|format(rating_list.anchor_rating) }}</span>
+        {% endif %}
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <article class="panel-card">
+      <div class="section-header">
+        <h2>{{ tr("Ranking") }}</h2>
+        <form method="get" action="/rating-lists/{{ rating_list.slug }}" class="inline-form">
+          <div class="choice-group" aria-label="Version filter">
+            <button
+              type="submit"
+              name="view"
+              value="all"
+              class="choice-button {% if ranking_view == 'all' %}is-active{% endif %}"
+            >{{ tr("Alle Versionen") }}</button>
+            <button
+              type="submit"
+              name="view"
+              value="best"
+              class="choice-button {% if ranking_view == 'best' %}is-active{% endif %}"
+            >{{ tr("Beste pro Engine") }}</button>
+          </div>
+        </form>
+      </div>
+      <div class="table-card inner-table">
+        <table>
+          <thead>
+            <tr>
+              <th>{{ tr("Rang") }}</th>
+              <th>{{ tr("Engine") }}</th>
+              <th>{{ tr("Version") }}</th>
+              <th>{{ tr("Rating") }}</th>
+              <th>{{ tr("95% CI") }}</th>
+              <th>{{ tr("Spiele") }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in ranking_rows %}
+              {% set entry = row.entry %}
+              <tr>
+                <td>{{ row.display_rank }}</td>
+                <td><a href="/engines/{{ entry.engine.slug }}">{{ entry.engine.name }}</a></td>
+                <td><a href="/engines/{{ entry.engine.slug }}/versions/{{ entry.engine_version.id }}">{{ entry.engine_version.version_name }}</a></td>
+                <td>{{ "%.0f"|format(entry.rating) }}</td>
+                <td>
+                  {% if entry.rating_lower is not none and entry.rating_upper is not none %}
+                    +- {{ "%.1f"|format((entry.rating_upper - entry.rating_lower) / 2.0) }}
+                  {% else %}
+                    -
+                  {% endif %}
+                </td>
+                <td>{{ entry.games_played }}</td>
+              </tr>
+            {% else %}
+              <tr>
+                <td colspan="6">{{ tr("Noch keine Eintraege vorhanden.") }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </article>
+  </section>
+{% endblock %}

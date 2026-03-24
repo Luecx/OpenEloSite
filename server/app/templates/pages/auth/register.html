@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <section class="auth-shell">
+    <form class="form-card" method="post" action="/auth/register">
+      <h1>{{ tr("Registrierung") }}</h1>
+      <label>
+        <span>{{ tr("Benutzername") }}</span>
+        <input type="text" name="username" required />
+      </label>
+      <label>
+        <span>{{ tr("Anzeigename") }}</span>
+        <input type="text" name="display_name" required />
+      </label>
+      <label>
+        <span>{{ tr("E-Mail") }}</span>
+        <input type="email" name="email" required />
+      </label>
+      <label>
+        <span>{{ tr("Passwort") }}</span>
+        <input type="password" name="password" required />
+      </label>
+      <button class="button" type="submit">{{ tr("Konto anlegen") }}</button>
+    </form>
+  </section>
+{% endblock %}

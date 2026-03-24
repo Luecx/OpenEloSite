@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <section class="section">
+    <div class="section-header">
+      <h1>{{ tr("Dashboard") }}</h1>
+      <p class="muted">{{ tr("Die wichtigsten Zahlen auf einen Blick.") }}</p>
+    </div>
+    <div class="card-grid">
+      <article class="card"><h3>{{ summary.engines }}</h3><p>{{ tr("Engines") }}</p></article>
+      <article class="card"><h3>{{ summary.versions }}</h3><p>{{ tr("Versionen") }}</p></article>
+      <article class="card"><h3>{{ summary.clients }}</h3><p>{{ tr("Aktive Clients") }}</p></article>
+      <article class="card"><h3>{{ summary.matches }}</h3><p>{{ tr("Matches") }}</p></article>
+    </div>
+  </section>
+
+  <section class="section">
+    <article class="card">
+      <h2>{{ tr("Meine Rollen") }}</h2>
+      <div class="tag-row">
+        {% for role_name in role_names %}
+          <span class="tag">{{ role_name }}</span>
+        {% else %}
+          <span class="tag">{{ tr("keine Rollen") }}</span>
+        {% endfor %}
+      </div>
+    </article>
+  </section>
+
+  <section class="section two-column">
+    <article class="card">
+      <h2>{{ tr("Clients") }}</h2>
+      <ul class="simple-list">
+        {% for client in my_clients %}
+          <li><a href="/clients/{{ client.id }}">{{ client.machine_name }}</a> | {{ client.max_threads }} {{ tr("Threads") }} | {{ client.max_hash }} MB {{ tr("Hash") }}</li>
+        {% else %}
+          <li>{{ tr("Keine aktiven Clients vorhanden.") }}</li>
+        {% endfor %}
+      </ul>
+    </article>
+    <article class="card">
+      <h2>{{ tr("Engines") }}</h2>
+      <ul class="simple-list">
+        {% for engine in my_engines %}
+          <li><a href="/engines/{{ engine.slug }}">{{ engine.protocol|upper }} {{ engine.name }} ({{ engine.versions|length }} {{ tr("Versionen") }})</a></li>
+        {% else %}
+          <li>{{ tr("Keine Engines vorhanden.") }}</li>
+        {% endfor %}
+      </ul>
+    </article>
+  </section>
+{% endblock %}

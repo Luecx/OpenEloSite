@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+{% from "components/icons.html" import icon %}
+
+{% block content %}
+  <section class="section">
+    <a class="back-link" href="/admin/system">← {{ tr("Zurueck zu Systemstatus") }}</a>
+    <div class="section-header">
+      <div>
+        <h1>{{ tr("Bench") }}</h1>
+        <p class="muted">{{ tr("Referenz-NPS und passende Bench-Artifacts fuer Clients verwalten.") }}</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section two-column">
+    <form class="form-card" method="post" action="/admin/bench/reference">
+      <h2>{{ tr("Bench-Referenz") }}</h2>
+      <label>
+        <span>{{ tr("Reference NPS") }}</span>
+        <input type="number" name="reference_nps" min="1" value="{{ reference_nps or '' }}" required />
+      </label>
+      <p class="muted">{{ tr("Dieser Wert ist die Referenz fuer den Speed-Faktor auf dem Client.") }}</p>
+      <button class="button" type="submit">{{ tr("Speichern") }}</button>
+    </form>
+
+    <form class="form-card" method="post" action="/admin/bench/artifacts" enctype="multipart/form-data">
+      <h2>{{ tr("Bench-Artifact hochladen") }}</h2>
+      <label>
+        <span>{{ tr("System") }}</span>
+        <select name="system_name">
+          <option value="linux">Linux</option>
+          <option value="windows">Windows</option>
+          <option value="darwin">Darwin</option>
+        </select>
+      </label>
+      <label><span>{{ tr("Datei") }}</span><input type="file" name="upload" required /></label>
+      <fieldset class="checkbox-fieldset">
+        <legend>{{ tr("Benoetigte CPU-Flags") }}</legend>
+        <label class="checkbox-row"><input type="checkbox" name="required_cpu_flags" value="sse4" /> SSE4</label>
+        <label class="checkbox-row"><input type="checkbox" name="required_cpu_flags" value="avx" /> AVX</label>
+        <label class="checkbox-row"><input type="checkbox" name="required_cpu_flags" value="avx2" /> AVX2</label>
+        <label class="checkbox-row"><input type="checkbox" name="required_cpu_flags" value="pext" /> PEXT</label>
+        <label class="checkbox-row"><input type="checkbox" name="required_cpu_flags" value="avx512" /> AVX-512</label>
+      </fieldset>
+      <button class="button" type="submit">{{ tr("Hochladen") }}</button>
+    </form>
+  </section>
+
+  {% if edit_artifact %}
+    <section class="section">
+      <form class="form-card" method="post" action="/admin/bench/artifacts/{{ edit_artifact.id }}">
+        <div class="section-header compact">
+          <h2>{{ tr("Bench-Artifact bearbeiten") }}</h2>
+          <a class="ghost-button link-button" href="/admin/bench">{{ tr("Abbrechen") }}</a>
+        </div>
+        <div class="detail-inline-grid">
+          <div><strong>{{ tr("Datei") }}:</strong> {{ edit_artifact.file_name }}</div>
+          <div><strong>{{ tr("Hash") }}:</strong> <code>{{ edit_artifact.content_hash[:12] }}</code></div>
+        </div>
+        <label>
+          <span>{{ tr("System") }}</span>
+          <select name="system_name">
+            <option value="linux" {% if edit_artifact.system_name == 'linux' %}selected{% endif %}>Linux</option>
+            <option value="windows" {% if edit_artifact.system_name == 'windows' %}selected{% endif %}>Windows</option>
+            <option value="darwin" {% if edit_artifact.system_name == 'darwin' %}selected{% endif %}>Darwin</option>
+          </select>
+        </label>
+        <fieldset class="checkbox-fieldset">
+          <legend>{{ tr("Benoetigte CPU-Flags") }}</legend>
+          <label class="checkbox-row"><input type="checkbox" name="required_cpu_flags" value="sse4" {% if 'sse4' in edit_artifact.required_cpu_flags %}checked{% endif %} /> SSE4</label>
+          <label class="checkbox-row"><input type="checkbox" name="required_cpu_flags" value="avx" {% if 'avx' in edit_artifact.required_cpu_flags %}checked{% endif %} /> AVX</label>
+          <label class="checkbox-row"><input type="checkbox" name="required_cpu_flags" value="avx2" {% if 'avx2' in edit_artifact.required_cpu_flags %}checked{% endif %} /> AVX2</label>
+          <label class="checkbox-row"><input type="checkbox" name="required_cpu_flags" value="pext" {% if 'pext' in edit_artifact.required_cpu_flags %}checked{% endif %} /> PEXT</label>
+          <label class="checkbox-row"><input type="checkbox" name="required_cpu_flags" value="avx512" {% if 'avx512' in edit_artifact.required_cpu_flags %}checked{% endif %} /> AVX-512</label>
+        </fieldset>
+        <button class="button" type="submit">{{ tr("Speichern") }}</button>
+      </form>
+    </section>
+  {% endif %}
+
+  <section class="section">
+    <article class="panel-card">
+      <h2>{{ tr("Bench-Artifacts") }}</h2>
+      <div class="table-card inner-table">
+        <table>
+          <thead>
+            <tr>
+              <th>{{ tr("Datei") }}</th>
+              <th>{{ tr("System") }}</th>
+              <th>{{ tr("CPU-Flags") }}</th>
+              <th>{{ tr("Hash") }}</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for artifact in bench_artifacts %}
+              <tr>
+                <td>{{ artifact.file_name }}</td>
+                <td>{{ artifact.system_name }}</td>
+                <td>{{ artifact.required_cpu_flags|join(", ") if artifact.required_cpu_flags else tr("keine") }}</td>
+                <td><code>{{ artifact.content_hash[:12] }}</code></td>
+                <td>
+                  <div class="action-cluster">
+                    <a class="icon-button" href="/admin/bench?artifact_id={{ artifact.id }}" title="{{ tr('Bearbeiten') }}" aria-label="{{ tr('Bearbeiten') }}">{{ icon("edit") }}</a>
+                    <form method="post" action="/admin/bench/artifacts/{{ artifact.id }}/delete" class="inline-form">
+                      <button class="icon-button danger" type="submit" title="{{ tr('Bench-Artifact entfernen') }}" aria-label="{{ tr('Bench-Artifact entfernen') }}">{{ icon("x") }}</button>
+                    </form>
+                  </div>
+                </td>
+              </tr>
+            {% else %}
+              <tr>
+                <td colspan="5">{{ tr("Keine Bench-Artifacts vorhanden.") }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </article>
+  </section>
+{% endblock %}
