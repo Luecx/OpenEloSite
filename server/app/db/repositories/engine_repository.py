@@ -365,13 +365,27 @@ def allows_rating_list(version: EngineVersion | None, rating_list_id: int | None
 
 
 def list_artifacts_for_version(db: Session, version_id: int) -> list[EngineArtifact]:
-    return list(
+    artifacts = list(
         db.scalars(
             select(EngineArtifact)
             .where(EngineArtifact.engine_version_id == version_id)
-            .order_by(EngineArtifact.system_name.asc(), EngineArtifact.created_at.desc())
+            .order_by(EngineArtifact.priority.asc(), EngineArtifact.id.asc())
         )
     )
+    return _normalize_artifact_priorities(db, artifacts)
+
+
+def _normalize_artifact_priorities(db: Session, artifacts: list[EngineArtifact]) -> list[EngineArtifact]:
+    changed = False
+    for index, artifact in enumerate(artifacts, start=1):
+        if artifact.priority != index:
+            artifact.priority = index
+            changed = True
+    if changed:
+        db.commit()
+        for artifact in artifacts:
+            db.refresh(artifact)
+    return artifacts
 
 
 def create_artifact(
@@ -383,12 +397,14 @@ def create_artifact(
     content_hash: str,
     required_cpu_flags: list[str],
 ) -> EngineArtifact:
+    existing_artifacts = list_artifacts_for_version(db, version.id)
     artifact = EngineArtifact(
         engine_version_id=version.id,
         system_name=(system_name or "").strip().lower(),
         file_name=file_name.strip(),
         file_path=file_path.strip(),
         content_hash=content_hash.strip(),
+        priority=len(existing_artifacts) + 1,
     )
     _apply_required_cpu_flags(artifact, required_cpu_flags)
     db.add(artifact)
@@ -415,11 +431,20 @@ def update_artifact(
 
 
 def delete_artifact(db: Session, artifact: EngineArtifact) -> None:
+    version_id = artifact.engine_version_id
     artifact_path = Path(artifact.file_path)
     db.delete(artifact)
     db.commit()
     if artifact_path.exists():
         artifact_path.unlink(missing_ok=True)
+    remaining = list(
+        db.scalars(
+            select(EngineArtifact)
+            .where(EngineArtifact.engine_version_id == version_id)
+            .order_by(EngineArtifact.priority.asc(), EngineArtifact.id.asc())
+        )
+    )
+    _normalize_artifact_priorities(db, remaining)
 
 
 def pick_compatible_artifact(version: EngineVersion | None, system_name: str, cpu_flags: list[str] | str | set[str] | None) -> EngineArtifact | None:
@@ -428,20 +453,37 @@ def pick_compatible_artifact(version: EngineVersion | None, system_name: str, cp
 
     normalized_system = (system_name or "").strip().lower()
     client_flags = client_repository.parse_cpu_flags(cpu_flags if isinstance(cpu_flags, str) else client_repository.serialize_cpu_flags(cpu_flags))
-    candidates: list[tuple[int, EngineArtifact]] = []
-    for artifact in version.artifacts:
+    ordered_artifacts = sorted(version.artifacts, key=lambda item: (item.priority, item.id))
+    for artifact in ordered_artifacts:
         if artifact.system_name.strip().lower() != normalized_system:
             continue
         required_flags = _artifact_required_flags(artifact)
         if not required_flags.issubset(client_flags):
             continue
-        candidates.append((len(required_flags), artifact))
+        return artifact
+    return None
 
-    if not candidates:
-        return None
 
-    candidates.sort(key=lambda item: (-item[0], -item[1].id))
-    return candidates[0][1]
+def move_artifact_priority(db: Session, artifact: EngineArtifact, direction: str) -> EngineArtifact:
+    artifacts = list_artifacts_for_version(db, artifact.engine_version_id)
+    artifact_ids = [item.id for item in artifacts]
+    if artifact.id not in artifact_ids:
+        return artifact
+
+    current_index = artifact_ids.index(artifact.id)
+    if direction == "up":
+        swap_index = current_index - 1
+    elif direction == "down":
+        swap_index = current_index + 1
+    else:
+        return artifact
+
+    if swap_index < 0 or swap_index >= len(artifacts):
+        return artifact
+
+    artifacts[current_index], artifacts[swap_index] = artifacts[swap_index], artifacts[current_index]
+    _normalize_artifact_priorities(db, artifacts)
+    return db.get(EngineArtifact, artifact.id) or artifact
 
 
 def list_leaderboard(db: Session, rating_list_id: int | None = None, best_per_engine: bool = False) -> list[LeaderboardEntry]:

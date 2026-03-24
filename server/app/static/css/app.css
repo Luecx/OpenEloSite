@@ -510,6 +510,14 @@ code {
   border-radius: var(--radius-md);
 }
 
+.embedded-filter-bar {
+  margin-bottom: 0;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+}
+
 .filter-bar > * {
   flex: 1 1 180px;
 }
@@ -635,6 +643,12 @@ textarea {
 
 .icon-button:hover {
   background: color-mix(in srgb, var(--surface-soft) 70%, transparent 30%);
+}
+
+.icon-button:disabled {
+  opacity: 0.35;
+  cursor: default;
+  pointer-events: none;
 }
 
 .icon-button.danger:hover {
@@ -907,6 +921,16 @@ th {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+}
+
+.priority-cluster {
+  gap: 4px;
+}
+
+.priority-value {
+  min-width: 1.5rem;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
 }
 
 .clickable-row {
@@ -1336,6 +1360,11 @@ th {
 .versions-card {
   display: grid;
   gap: 14px;
+  overflow: visible;
+}
+
+.table-scroll {
+  overflow-x: auto;
 }
 
 .versions-card .section-header {
@@ -1373,6 +1402,19 @@ th {
 
 .engine-edit-panel h2 {
   margin-bottom: 8px;
+}
+
+.artifact-upload-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 12;
+  min-width: min(520px, calc(100vw - 40px));
+  padding: 16px;
+  border-radius: 18px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  box-shadow: var(--shadow);
 }
 
 .inline-editor[open] summary.button {

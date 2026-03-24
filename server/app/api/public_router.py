@@ -40,6 +40,18 @@ def _editable_engine_for_user(db: Session, engine_id: int, current_user):
     return engine_repository.get_engine_for_user(db, engine_id, current_user.id)
 
 
+def _format_ram_summary(ram_total_mb: int | None, ram_speed_mt_s: int | None) -> str:
+    total_mb = int(ram_total_mb or 0)
+    if total_mb <= 0:
+        return "-"
+    total_gb = total_mb / 1024.0
+    summary = f"{total_gb:.1f} GB"
+    speed = int(ram_speed_mt_s or 0)
+    if speed > 0:
+        summary = f"{summary} @ {speed} MT/s"
+    return summary
+
+
 @router.get("/logo.png")
 def app_logo():
     logo_path = Path(__file__).resolve().parents[3] / "logo.png"
@@ -313,6 +325,7 @@ def client_detail_page(client_id: int, request: Request, db: Session = Depends(g
         client=client,
         is_online=client_repository.is_client_active(client),
         supported_cpu_flags=client_repository.parse_cpu_flags(client.cpu_flags),
+        client_ram_summary=_format_ram_summary(client.ram_total_mb, client.ram_speed_mt_s),
         client_flag_rows=client_flag_rows,
         page_title=f"Client {client.machine_name}",
     )

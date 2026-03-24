@@ -29,7 +29,8 @@ def build_parser() -> argparse.ArgumentParser:
         help="Optional root directory for Syzygy tablebases (scanned recursively up to depth 2)",
     )
     parser.add_argument("--machine-name", default="", help="Optional machine name override")
-    parser.add_argument("--machine-key", default="", help="Optional stable machine key override")
+    parser.add_argument("--machine-fingerprint", default="", help="Optional stable machine fingerprint override")
+    parser.add_argument("--machine-key", dest="machine_fingerprint", default="", help=argparse.SUPPRESS)
     parser.add_argument("--poll-interval", type=int, default=0, help="Optional poll interval override in seconds")
     parser.add_argument(
         "--heartbeat-interval",
@@ -51,7 +52,7 @@ def main() -> None:
             workdir=args.workdir,
             syzygy_root=args.syzygy_root,
             machine_name=args.machine_name,
-            machine_key=args.machine_key,
+            machine_fingerprint=args.machine_fingerprint,
             poll_interval_override=args.poll_interval,
             heartbeat_interval_override=args.heartbeat_interval,
         )

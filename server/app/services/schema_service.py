@@ -130,6 +130,13 @@ def _ensure_additive_columns(engine: Engine, table_names: set[str]) -> None:
             if "machine_fingerprint" not in columns:
                 connection.execute(text("ALTER TABLE clients ADD COLUMN machine_fingerprint VARCHAR(120)"))
                 connection.execute(text("UPDATE clients SET machine_fingerprint = machine_key WHERE machine_fingerprint IS NULL OR machine_fingerprint = ''"))
+            if "cpu_name" not in columns:
+                connection.execute(text("ALTER TABLE clients ADD COLUMN cpu_name VARCHAR(200)"))
+            if "ram_total_mb" not in columns:
+                connection.execute(text("ALTER TABLE clients ADD COLUMN ram_total_mb INTEGER DEFAULT 0"))
+                connection.execute(text("UPDATE clients SET ram_total_mb = 0 WHERE ram_total_mb IS NULL"))
+            if "ram_speed_mt_s" not in columns:
+                connection.execute(text("ALTER TABLE clients ADD COLUMN ram_speed_mt_s INTEGER"))
             if "syzygy_max_pieces" not in columns:
                 connection.execute(text("ALTER TABLE clients ADD COLUMN syzygy_max_pieces INTEGER DEFAULT 0"))
                 connection.execute(text("UPDATE clients SET syzygy_max_pieces = 0 WHERE syzygy_max_pieces IS NULL"))
@@ -146,15 +153,21 @@ def _ensure_additive_columns(engine: Engine, table_names: set[str]) -> None:
         alter_statements = [
             ("client_user_id", "ALTER TABLE match_jobs ADD COLUMN client_user_id INTEGER"),
             ("client_user_display_name", "ALTER TABLE match_jobs ADD COLUMN client_user_display_name VARCHAR(120)"),
-            ("client_machine_key", "ALTER TABLE match_jobs ADD COLUMN client_machine_key VARCHAR(120)"),
+            ("client_session_key", "ALTER TABLE match_jobs ADD COLUMN client_session_key VARCHAR(120)"),
+            ("client_machine_fingerprint", "ALTER TABLE match_jobs ADD COLUMN client_machine_fingerprint VARCHAR(120)"),
             ("client_machine_name", "ALTER TABLE match_jobs ADD COLUMN client_machine_name VARCHAR(120)"),
             ("client_system_name", "ALTER TABLE match_jobs ADD COLUMN client_system_name VARCHAR(50)"),
+            ("client_cpu_name", "ALTER TABLE match_jobs ADD COLUMN client_cpu_name VARCHAR(200)"),
+            ("client_ram_total_mb", "ALTER TABLE match_jobs ADD COLUMN client_ram_total_mb INTEGER"),
+            ("client_ram_speed_mt_s", "ALTER TABLE match_jobs ADD COLUMN client_ram_speed_mt_s INTEGER"),
             ("client_cpu_flags", "ALTER TABLE match_jobs ADD COLUMN client_cpu_flags TEXT"),
         ]
         with engine.begin() as connection:
             for column_name, statement in alter_statements:
                 if column_name not in columns:
                     connection.execute(text(statement))
+            if "client_machine_key" in columns:
+                connection.execute(text("UPDATE match_jobs SET client_machine_fingerprint = client_machine_key WHERE (client_machine_fingerprint IS NULL OR client_machine_fingerprint = '') AND client_machine_key IS NOT NULL AND client_machine_key != ''"))
 
     if "leaderboard_entries" in table_names:
         columns = {column["name"] for column in inspector.get_columns("leaderboard_entries")}
@@ -167,6 +180,13 @@ def _ensure_additive_columns(engine: Engine, table_names: set[str]) -> None:
             for column_name, statement in alter_statements:
                 if column_name not in columns:
                     connection.execute(text(statement))
+
+    if "engine_artifacts" in table_names:
+        columns = {column["name"] for column in inspector.get_columns("engine_artifacts")}
+        with engine.begin() as connection:
+            if "priority" not in columns:
+                connection.execute(text("ALTER TABLE engine_artifacts ADD COLUMN priority INTEGER DEFAULT 0"))
+                connection.execute(text("UPDATE engine_artifacts SET priority = 0 WHERE priority IS NULL"))
 
 
 def ensure_schema(engine: Engine) -> None:

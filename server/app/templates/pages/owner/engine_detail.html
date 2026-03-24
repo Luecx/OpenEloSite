@@ -78,28 +78,30 @@
         </details>
       </div>
 
-      <table>
-        <thead>
-          <tr>
-            <th>{{ tr("Version") }}</th>
-            <th>{{ tr("Artefakte") }}</th>
-            <th>{{ tr("Targets") }}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for version in versions %}
-            <tr class="clickable-row" data-href="/owner/versions/{{ version.id }}">
-              <td><a href="/owner/versions/{{ version.id }}">{{ version.version_name }}</a></td>
-              <td>{{ version.artifacts|length }}</td>
-              <td>{{ version.runtime_label }}</td>
-            </tr>
-          {% else %}
+      <div class="table-scroll">
+        <table>
+          <thead>
             <tr>
-              <td colspan="3">{{ tr("Keine Versionen vorhanden.") }}</td>
+              <th>{{ tr("Version") }}</th>
+              <th>{{ tr("Artefakte") }}</th>
+              <th>{{ tr("Targets") }}</th>
             </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {% for version in versions %}
+              <tr class="clickable-row" data-href="/owner/versions/{{ version.id }}">
+                <td><a href="/owner/versions/{{ version.id }}">{{ version.version_name }}</a></td>
+                <td>{{ version.artifacts|length }}</td>
+                <td>{{ version.runtime_label }}</td>
+              </tr>
+            {% else %}
+              <tr>
+                <td colspan="3">{{ tr("Keine Versionen vorhanden.") }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
     </div>
   </section>
 

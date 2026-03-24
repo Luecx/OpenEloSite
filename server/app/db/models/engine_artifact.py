@@ -4,6 +4,7 @@ from datetime import datetime
 
 from sqlalchemy import DateTime
 from sqlalchemy import ForeignKey
+from sqlalchemy import Integer
 from sqlalchemy import String
 from sqlalchemy import Text
 from sqlalchemy.orm import Mapped
@@ -30,6 +31,7 @@ class EngineArtifact(Base):
     file_name: Mapped[str] = mapped_column(String(255))
     file_path: Mapped[str] = mapped_column(Text)
     content_hash: Mapped[str] = mapped_column(String(64))
+    priority: Mapped[int] = mapped_column(Integer, default=0)
     requires_sse4: Mapped[bool] = mapped_column(default=False)
     requires_avx: Mapped[bool] = mapped_column(default=False)
     requires_avx2: Mapped[bool] = mapped_column(default=False)

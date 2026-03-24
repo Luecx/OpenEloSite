@@ -291,6 +291,8 @@ _TRANSLATIONS = {
     "Client-Session": {"en": "Client session"},
     "Maschinenname": {"en": "Machine name"},
     "System": {"en": "System"},
+    "CPU": {"en": "CPU"},
+    "RAM": {"en": "RAM"},
     "Max Threads": {"en": "Max threads"},
     "Max Hash": {"en": "Max hash"},
     "CPU-Flags": {"en": "CPU flags"},
@@ -354,6 +356,9 @@ _TRANSLATIONS = {
     },
     "Artifact bearbeiten": {"en": "Edit artifact"},
     "Artifact entfernen": {"en": "Remove artifact"},
+    "Prioritaet": {"en": "Priority"},
+    "Nach oben": {"en": "Move up"},
+    "Nach unten": {"en": "Move down"},
     "Der Matchmaker erzeugt diese Matches automatisch. Der Download enthaelt die PGNs aller fertigen Jobs.": {
         "en": "The matchmaker creates these matches automatically. The download contains the PGNs of all finished jobs.",
     },

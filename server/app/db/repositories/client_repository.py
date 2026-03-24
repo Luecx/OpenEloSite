@@ -47,6 +47,16 @@ def _build_session_machine_key(machine_fingerprint: str) -> str:
     return f"{base}-{timestamp}-{suffix}"[:120]
 
 
+def _normalize_optional_int(value: int | str | None) -> int | None:
+    if value is None or value == "":
+        return None
+    try:
+        normalized = int(value)
+    except (TypeError, ValueError):
+        return None
+    return normalized if normalized > 0 else None
+
+
 def list_clients_for_user(db: Session, user_id: int) -> list[Client]:
     return list(
         db.scalars(
@@ -115,6 +125,9 @@ def create_client(
     machine_fingerprint: str,
     machine_name: str,
     system_name: str,
+    cpu_name: str | None,
+    ram_total_mb: int | str | None,
+    ram_speed_mt_s: int | str | None,
     max_threads: int,
     max_hash: int,
     syzygy_max_pieces: int | str | None,
@@ -127,6 +140,9 @@ def create_client(
         machine_fingerprint=machine_fingerprint.strip() or None,
         machine_name=machine_name.strip(),
         system_name=(system_name or "linux").strip().lower() or "linux",
+        cpu_name=(cpu_name or "").strip() or None,
+        ram_total_mb=_normalize_optional_int(ram_total_mb) or 0,
+        ram_speed_mt_s=_normalize_optional_int(ram_speed_mt_s),
         max_threads=max(1, int(max_threads)),
         max_hash=max(1, int(max_hash)),
         syzygy_max_pieces=normalize_syzygy_probe_limit(syzygy_max_pieces),
@@ -148,9 +164,12 @@ def delete_client(db: Session, client: Client) -> None:
 def register_client_session(
     db: Session,
     user_id: int,
-    machine_key: str,
+    machine_fingerprint: str,
     machine_name: str,
     system_name: str,
+    cpu_name: str | None,
+    ram_total_mb: int | str | None,
+    ram_speed_mt_s: int | str | None,
     max_threads: int,
     max_hash: int,
     syzygy_max_pieces: int | str | None,
@@ -160,9 +179,12 @@ def register_client_session(
     return create_client(
         db=db,
         user_id=user_id,
-        machine_fingerprint=machine_key,
+        machine_fingerprint=machine_fingerprint,
         machine_name=machine_name,
         system_name=system_name,
+        cpu_name=cpu_name,
+        ram_total_mb=ram_total_mb,
+        ram_speed_mt_s=ram_speed_mt_s,
         max_threads=max_threads,
         max_hash=max_hash,
         syzygy_max_pieces=syzygy_max_pieces,

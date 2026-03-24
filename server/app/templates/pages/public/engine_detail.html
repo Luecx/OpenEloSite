@@ -74,32 +74,34 @@
       {% endif %}
     </div>
 
-    <table>
-      <thead>
-      <tr>
-        <th>{{ tr("Version") }}</th>
-        <th>{{ tr("Artefakte") }}</th>
-        <th>{{ tr("Targets") }}</th>
-      </tr>
-      </thead>
-      <tbody>
-      {% for version in versions %}
-      <tr class="clickable-row" data-href="{% if can_edit_engine %}/owner/versions/{{ version.id }}{% else %}/engines/{{ engine.slug }}/versions/{{ version.id }}{% endif %}">
-        <td>
-          <a href="{% if can_edit_engine %}/owner/versions/{{ version.id }}{% else %}/engines/{{ engine.slug }}/versions/{{ version.id }}{% endif %}">
-            {{ version.version_name }}
-          </a>
-        </td>
-        <td>{{ version.artifacts|length }}</td>
-        <td>{{ version.runtime_label }}</td>
-      </tr>
-      {% else %}
-      <tr>
-        <td colspan="3">{{ tr("Keine Versionen vorhanden.") }}</td>
-      </tr>
-      {% endfor %}
-      </tbody>
-    </table>
+    <div class="table-scroll">
+      <table>
+        <thead>
+        <tr>
+          <th>{{ tr("Version") }}</th>
+          <th>{{ tr("Artefakte") }}</th>
+          <th>{{ tr("Targets") }}</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for version in versions %}
+        <tr class="clickable-row" data-href="{% if can_edit_engine %}/owner/versions/{{ version.id }}{% else %}/engines/{{ engine.slug }}/versions/{{ version.id }}{% endif %}">
+          <td>
+            <a href="{% if can_edit_engine %}/owner/versions/{{ version.id }}{% else %}/engines/{{ engine.slug }}/versions/{{ version.id }}{% endif %}">
+              {{ version.version_name }}
+            </a>
+          </td>
+          <td>{{ version.artifacts|length }}</td>
+          <td>{{ version.runtime_label }}</td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="3">{{ tr("Keine Versionen vorhanden.") }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
   </div>
 </section>
 

@@ -31,17 +31,20 @@ def get_api_user(authorization: str | None = Header(default=None), db: Session =
 
 
 def _register_or_update_client(payload: dict, db: Session, user):
-    machine_key = (payload.get("machine_key") or "").strip()
-    machine_name = (payload.get("machine_name") or machine_key or "client").strip()
-    if not machine_key:
-        raise HTTPException(status_code=400, detail="machine_key fehlt")
+    machine_fingerprint = (payload.get("machine_fingerprint") or payload.get("machine_key") or "").strip()
+    machine_name = (payload.get("machine_name") or machine_fingerprint or "client").strip()
+    if not machine_fingerprint:
+        raise HTTPException(status_code=400, detail="machine_fingerprint fehlt")
     try:
         return client_repository.register_client_session(
             db=db,
             user_id=user.id,
-            machine_key=machine_key,
+            machine_fingerprint=machine_fingerprint,
             machine_name=machine_name,
             system_name=payload.get("system_name", "linux"),
+            cpu_name=payload.get("cpu_name"),
+            ram_total_mb=payload.get("ram_total_mb"),
+            ram_speed_mt_s=payload.get("ram_speed_mt_s"),
             max_threads=payload.get("max_threads", 1),
             max_hash=payload.get("max_hash", 256),
             syzygy_max_pieces=payload.get("syzygy_max_pieces", 0),

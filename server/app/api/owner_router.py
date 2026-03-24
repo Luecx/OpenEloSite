@@ -433,6 +433,28 @@ def delete_artifact(
     return redirect_to(f"/owner/versions/{version_id}", "Artifact entfernt.")
 
 
+@router.post("/artifacts/{artifact_id}/move")
+def move_artifact(
+    artifact_id: int,
+    direction: str = Form(...),
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user_required),
+):
+    artifact = engine_repository.get_artifact(db, artifact_id)
+    if artifact is None:
+        return redirect_to("/owner/engines", "Artifact nicht gefunden.")
+    version = artifact.engine_version
+    if version is None:
+        return redirect_to("/owner/engines", "Artifact ohne Version.")
+    engine = _editable_engine_for_user(db, version.engine_id, current_user)
+    if engine is None:
+        return redirect_to("/owner/engines", "Kein Zugriff auf dieses Artifact.")
+
+    engine_repository.move_artifact_priority(db, artifact, direction)
+    audit_service.log_action(db, current_user.id, "artifact_reorder", "engine_artifact", str(artifact.id), f"Artifact {direction}.")
+    return redirect_to(f"/owner/versions/{version.id}", "Artifact sortiert.")
+
+
 @router.post("/versions/{version_id}/matches")
 def create_match(
     version_id: int,

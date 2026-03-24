@@ -7,10 +7,7 @@ from pathlib import Path
 from app.api.server_client import ServerClient
 from app.services.console_service import ClientConsole
 from app.services.fastchess_service import ensure_fastchess
-from app.services.hardware_service import build_machine_key
-from app.services.hardware_service import build_machine_name
-from app.services.hardware_service import collect_cpu_flags
-from app.services.hardware_service import detect_system_name
+from app.services.hardware_service import collect_hardware_snapshot
 from app.services.job_runner import JobRunner
 from app.services.syzygy_service import inspect_syzygy_root
 from app.services.workspace_service import WorkspaceService
@@ -43,7 +40,7 @@ class ClientService:
         workdir: Path,
         syzygy_root: Path | None = None,
         machine_name: str = "",
-        machine_key: str = "",
+        machine_fingerprint: str = "",
         poll_interval_override: int = 0,
         heartbeat_interval_override: int = 0,
     ):
@@ -55,16 +52,20 @@ class ClientService:
         self.server = ServerClient(server_url, access_key)
         self.max_threads = int(max_threads)
         self.max_hash = int(max_hash)
-        self.machine_name = machine_name.strip() or build_machine_name()
-        self.machine_key = machine_key.strip() or build_machine_key()
+        hardware = collect_hardware_snapshot()
+        self.machine_name = machine_name.strip() or str(hardware["machine_name"])
+        self.machine_fingerprint = machine_fingerprint.strip() or str(hardware["machine_fingerprint"])
         self.poll_interval_override = max(0, int(poll_interval_override))
         self.heartbeat_interval_override = max(0, int(heartbeat_interval_override))
         self.poll_interval = 5
         self.heartbeat_interval = 15
         self.state = "starting"
         self.client_id: int | None = None
-        self.system_name = detect_system_name()
-        self.cpu_flags = set(collect_cpu_flags())
+        self.system_name = str(hardware["system_name"])
+        self.cpu_flags = set(hardware["cpu_flags"])
+        self.cpu_name = str(hardware["cpu_name"] or "").strip() or "unknown cpu"
+        self.ram_total_mb = max(0, int(hardware["ram_total_mb"] or 0))
+        self.ram_speed_mt_s = int(hardware["ram_speed_mt_s"] or 0)
         self.console = ClientConsole()
         self.console.banner("OpenELO Client")
         self.workspace = WorkspaceService(workdir)
@@ -90,13 +91,16 @@ class ClientService:
 
     def register(self) -> int:
         payload = {
-            "machine_key": self.machine_key,
+            "machine_fingerprint": self.machine_fingerprint,
             "machine_name": self.machine_name,
             "system_name": self.system_name,
             "max_threads": self.max_threads,
             "max_hash": self.max_hash,
             "syzygy_max_pieces": self.syzygy.max_pieces,
             "cpu_flags": sorted(self.cpu_flags),
+            "cpu_name": self.cpu_name,
+            "ram_total_mb": self.ram_total_mb,
+            "ram_speed_mt_s": self.ram_speed_mt_s,
             "state": "idle",
         }
         response = self.server.post("/api/client/register", payload)
@@ -121,7 +125,11 @@ class ClientService:
             "INIT",
             [
                 ("Client ID", self.client_id),
+                ("Fingerprint", self.machine_fingerprint),
+                ("Machine", self.machine_name),
                 ("System", self.system_name),
+                ("CPU", self.cpu_name),
+                ("RAM", self._format_ram_summary()),
                 ("Threads", self.max_threads),
                 ("Hash", f"{self.max_hash} MB"),
                 ("Workdir", self.workspace.root),
@@ -129,6 +137,15 @@ class ClientService:
             subtitle="Client Registration",
         )
         return self.client_id
+
+    def _format_ram_summary(self) -> str:
+        if self.ram_total_mb <= 0:
+            return "-"
+        total_gb = self.ram_total_mb / 1024.0
+        base = f"{total_gb:.1f} GB"
+        if self.ram_speed_mt_s > 0:
+            return f"{base} @ {self.ram_speed_mt_s} MT/s"
+        return base
 
     def send_heartbeat(self) -> None:
         if self.client_id is None:

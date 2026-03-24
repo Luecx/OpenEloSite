@@ -16,171 +16,193 @@
         <button class="button" type="submit">{{ tr("Version speichern") }}</button>
       </form>
 
-      <form class="form-card" method="post" action="/owner/versions/{{ version.id }}/artifacts" enctype="multipart/form-data">
-        <h2>{{ tr("Artifact hochladen") }}</h2>
-        <label>
-          <span>{{ tr("System") }}</span>
-          <select name="system_name">
-            <option value="linux">Linux</option>
-            <option value="windows">Windows</option>
-            <option value="darwin">Darwin</option>
-          </select>
-        </label>
-        <label><span>{{ tr("Datei") }}</span><input type="file" name="upload" required /></label>
-        <fieldset class="checkbox-fieldset">
-          <legend>{{ tr("Benoetigte CPU-Flags") }}</legend>
-          <label class="checkbox-row"><input type="checkbox" name="required_cpu_flags" value="sse4" /> SSE4</label>
-          <label class="checkbox-row"><input type="checkbox" name="required_cpu_flags" value="avx" /> AVX</label>
-          <label class="checkbox-row"><input type="checkbox" name="required_cpu_flags" value="avx2" /> AVX2</label>
-          <label class="checkbox-row"><input type="checkbox" name="required_cpu_flags" value="pext" /> PEXT</label>
-          <label class="checkbox-row"><input type="checkbox" name="required_cpu_flags" value="avx512" /> AVX-512</label>
-        </fieldset>
-        <button class="button" type="submit">{{ tr("Artifact hochladen") }}</button>
+      <form method="post" action="/owner/versions/{{ version.id }}/rating-lists" class="form-card">
+        <h2>{{ tr("Present in rating lists") }}</h2>
+        <p class="muted">{{ tr("Der Matchmaker verwendet nur Rating-Listen, die hier fuer diese Version angehakt sind.") }}</p>
+        <div class="checklist-grid">
+          {% for item in rating_lists %}
+            <label class="checkbox-row">
+              <input type="checkbox" name="rating_list_ids" value="{{ item.id }}" {% if item.id in allowed_rating_list_ids %}checked{% endif %} />
+              <span>{{ item.name }}</span>
+            </label>
+          {% else %}
+            <p class="muted">{{ tr("Keine Rating-Listen vorhanden.") }}</p>
+          {% endfor %}
+        </div>
+        <div class="button-row">
+          <button class="button" type="submit">{{ tr("Speichern") }}</button>
+        </div>
       </form>
     </div>
   </section>
 
   <section class="section">
-    <div class="section-header">
-      <h2>{{ tr("Artefakte") }}</h2>
-      <p class="muted">{{ tr("Der Matchmaker waehlt pro Client das passende Binary anhand von System und CPU-Flags aus.") }}</p>
-    </div>
-    <div class="table-card">
-      <table>
-        <thead>
-          <tr>
-            <th>{{ tr("Datei") }}</th>
-            <th>{{ tr("System") }}</th>
-            <th>{{ tr("CPU-Flags") }}</th>
-            <th>{{ tr("Hash") }}</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for artifact in artifacts %}
+    <div class="table-card versions-card">
+      <div class="section-header">
+        <h2>{{ tr("Artefakte") }}</h2>
+        <details class="inline-editor">
+          <summary class="button">{{ tr("Artifact hochladen") }}</summary>
+          <div class="inline-editor-panel artifact-upload-panel">
+            <form class="compact-form" method="post" action="/owner/versions/{{ version.id }}/artifacts" enctype="multipart/form-data">
+              <label>
+                <span>{{ tr("System") }}</span>
+                <select name="system_name">
+                  <option value="linux">Linux</option>
+                  <option value="windows">Windows</option>
+                  <option value="darwin">Darwin</option>
+                </select>
+              </label>
+              <label><span>{{ tr("Datei") }}</span><input type="file" name="upload" required /></label>
+              <fieldset class="checkbox-fieldset">
+                <legend>{{ tr("Benoetigte CPU-Flags") }}</legend>
+                <label class="checkbox-row"><input type="checkbox" name="required_cpu_flags" value="sse4" /> SSE4</label>
+                <label class="checkbox-row"><input type="checkbox" name="required_cpu_flags" value="avx" /> AVX</label>
+                <label class="checkbox-row"><input type="checkbox" name="required_cpu_flags" value="avx2" /> AVX2</label>
+                <label class="checkbox-row"><input type="checkbox" name="required_cpu_flags" value="pext" /> PEXT</label>
+                <label class="checkbox-row"><input type="checkbox" name="required_cpu_flags" value="avx512" /> AVX-512</label>
+              </fieldset>
+              <div class="button-row">
+                <button class="button" type="submit">{{ tr("Artifact hochladen") }}</button>
+                <button class="ghost-button" type="button" data-close-inline-editor>{{ tr("Abbrechen") }}</button>
+              </div>
+            </form>
+          </div>
+        </details>
+      </div>
+
+      <div class="table-scroll">
+        <table>
+          <thead>
             <tr>
-              <td>{{ artifact.file_name }}</td>
-              <td>{{ artifact.system_name }}</td>
-              <td>{{ artifact.required_flag_labels|join(", ") if artifact.required_flag_labels else tr("keine") }}</td>
-              <td><code>{{ artifact.content_hash[:12] }}</code></td>
-              <td>
-                <div class="action-cluster">
-                  <a class="icon-button" href="/owner/artifacts/{{ artifact.id }}/edit" title="{{ tr('Artifact bearbeiten') }}" aria-label="{{ tr('Artifact bearbeiten') }}">{{ icon("edit") }}</a>
-                  <form method="post" action="/owner/artifacts/{{ artifact.id }}/delete" class="inline-form">
-                    <button class="icon-button danger" type="submit" title="{{ tr('Artifact entfernen') }}" aria-label="{{ tr('Artifact entfernen') }}">{{ icon("x") }}</button>
+              <th>{{ tr("Prioritaet") }}</th>
+              <th>{{ tr("Datei") }}</th>
+              <th>{{ tr("System") }}</th>
+              <th>{{ tr("CPU-Flags") }}</th>
+              <th>{{ tr("Hash") }}</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for artifact in artifacts %}
+              <tr>
+                <td>
+                  <div class="action-cluster priority-cluster">
+                    <span class="priority-value">{{ artifact.priority }}</span>
+                    <form method="post" action="/owner/artifacts/{{ artifact.id }}/move" class="inline-form">
+                      <input type="hidden" name="direction" value="up" />
+                      <button class="icon-button" type="submit" title="{{ tr('Nach oben') }}" aria-label="{{ tr('Nach oben') }}" {% if loop.first %}disabled{% endif %}>{{ icon("chevron-up") }}</button>
+                    </form>
+                    <form method="post" action="/owner/artifacts/{{ artifact.id }}/move" class="inline-form">
+                      <input type="hidden" name="direction" value="down" />
+                      <button class="icon-button" type="submit" title="{{ tr('Nach unten') }}" aria-label="{{ tr('Nach unten') }}" {% if loop.last %}disabled{% endif %}>{{ icon("chevron-down") }}</button>
+                    </form>
+                  </div>
+                </td>
+                <td>{{ artifact.file_name }}</td>
+                <td>{{ artifact.system_name }}</td>
+                <td>{{ artifact.required_flag_labels|join(", ") if artifact.required_flag_labels else tr("keine") }}</td>
+                <td><code>{{ artifact.content_hash[:12] }}</code></td>
+                <td>
+                  <div class="action-cluster">
+                    <a class="icon-button" href="/owner/artifacts/{{ artifact.id }}/edit" title="{{ tr('Artifact bearbeiten') }}" aria-label="{{ tr('Artifact bearbeiten') }}">{{ icon("edit") }}</a>
+                    <form method="post" action="/owner/artifacts/{{ artifact.id }}/delete" class="inline-form">
+                      <button class="icon-button danger" type="submit" title="{{ tr('Artifact entfernen') }}" aria-label="{{ tr('Artifact entfernen') }}">{{ icon("x") }}</button>
+                    </form>
+                  </div>
+                </td>
+              </tr>
+            {% else %}
+              <tr>
+                <td colspan="6">{{ tr("Keine Artifacts vorhanden.") }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="table-card versions-card">
+      <div class="section-header">
+        <div>
+          <h2>{{ tr("Matches") }}</h2>
+          <p class="muted">{{ tr("Der Matchmaker sucht automatisch Gegner aus und vergibt daraus Jobs an aktive Clients.") }}</p>
+        </div>
+        <a class="ghost-button link-button" href="/engines/{{ engine.slug }}/versions/{{ version.id }}/insights">{{ tr("Versions-Insights") }}</a>
+      </div>
+
+      <form method="get" action="/owner/versions/{{ version.id }}" class="filter-bar embedded-filter-bar">
+        <select name="rating_list_id">
+          <option value="">{{ tr("Alle Rating-Listen") }}</option>
+          {% for item in rating_lists %}
+            <option value="{{ item.id }}" {% if selected_rating_list_id == item.id %}selected{% endif %}>{{ item.name }}</option>
+          {% endfor %}
+        </select>
+        <input type="text" name="opponent" value="{{ opponent_query }}" placeholder="{{ tr('Gegner suchen') }}" />
+        <button class="button secondary" type="submit">{{ tr("Filtern") }}</button>
+      </form>
+
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>{{ tr("Gegner") }}</th>
+              <th>W</th>
+              <th>D</th>
+              <th>L</th>
+              <th>{{ tr("Spiele") }}</th>
+              <th>{{ tr("Jobs") }}</th>
+              <th>{{ tr("Settings") }}</th>
+              <th>{{ tr("Book") }}</th>
+              <th>{{ tr("Rating-Liste") }}</th>
+              <th>{{ tr("PGN ZIPs") }}</th>
+              <th>{{ tr("Insights") }}</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in matches %}
+              {% set is_primary = item.engine_version_id == version.id %}
+              <tr class="clickable-row" data-href="/matches/{{ item.id }}">
+                <td>
+                  {% if is_primary %}
+                    <a href="/engines/{{ item.opponent_version.engine.slug }}/versions/{{ item.opponent_version.id }}">{{ item.opponent_version.engine.name }} / {{ item.opponent_version.version_name }}</a>
+                  {% else %}
+                    <a href="/engines/{{ item.engine_version.engine.slug }}/versions/{{ item.engine_version.id }}">{{ item.engine_version.engine.name }} / {{ item.engine_version.version_name }}</a>
+                  {% endif %}
+                </td>
+                <td>{{ item.wins if is_primary else item.losses }}</td>
+                <td>{{ item.draws }}</td>
+                <td>{{ item.losses if is_primary else item.wins }}</td>
+                <td>{{ item.games_count }}</td>
+                <td>{{ item.job_count }}</td>
+                <td>
+                  {{ item.time_control_label }}
+                  {% if item.time_control_moves %}| {{ item.time_control_moves }} {{ tr("Zuege") }}{% endif %}
+                  | {{ tr("Threads") }} {{ item.threads_per_engine }}
+                  | {{ tr("Hash") }} {{ item.hash_per_engine }} MB
+                  | {{ tr("Syzygy") }} {{ tr(item.syzygy_label) }}
+                </td>
+                <td>{{ item.opening_book.name if item.opening_book else tr("Ohne Book") }}</td>
+                <td>{{ item.rating_list.name if item.rating_list else "-" }}</td>
+                <td><a href="/owner/matches/{{ item.id }}/download.zip">{{ tr("PGN ZIPs") }}</a></td>
+                <td><a href="/matches/{{ item.id }}/insights">{{ tr("Insights") }}</a></td>
+                <td>
+                  <form method="post" action="/owner/matches/{{ item.id }}/delete" class="inline-form">
+                    <input type="hidden" name="next_path" value="/owner/versions/{{ version.id }}" />
+                    <button class="icon-button danger" type="submit" title="{{ tr('Match entfernen') }}" aria-label="{{ tr('Match entfernen') }}">{{ icon("x") }}</button>
                   </form>
-                </div>
-              </td>
-            </tr>
-          {% else %}
-            <tr>
-              <td colspan="5">{{ tr("Keine Artifacts vorhanden.") }}</td>
-            </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-    <p><a href="/engines/{{ engine.slug }}/versions/{{ version.id }}">{{ tr("Oeffentliche Versionseite") }}</a></p>
-  </section>
-
-  <section class="section">
-    <div class="section-header">
-      <h2>{{ tr("Present in rating lists") }}</h2>
-      <p class="muted">{{ tr("Der Matchmaker verwendet nur Rating-Listen, die hier fuer diese Version angehakt sind.") }}</p>
-    </div>
-    <form method="post" action="/owner/versions/{{ version.id }}/rating-lists" class="form-card">
-      <div class="checklist-grid">
-        {% for item in rating_lists %}
-          <label class="checkbox-row">
-            <input type="checkbox" name="rating_list_ids" value="{{ item.id }}" {% if item.id in allowed_rating_list_ids %}checked{% endif %} />
-            <span>{{ item.name }}</span>
-          </label>
-        {% else %}
-          <p class="muted">{{ tr("Keine Rating-Listen vorhanden.") }}</p>
-        {% endfor %}
+                </td>
+              </tr>
+            {% else %}
+              <tr>
+                <td colspan="12">{{ tr("Keine Matches fuer diese Filter gefunden.") }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
       </div>
-      <div class="button-row">
-        <button class="button" type="submit">{{ tr("Speichern") }}</button>
-      </div>
-    </form>
-  </section>
-
-  <section class="section">
-    <div class="section-header">
-      <h2>{{ tr("Matches") }}</h2>
-      <p class="muted">{{ tr("Der Matchmaker sucht automatisch Gegner aus und vergibt daraus Jobs an aktive Clients.") }}</p>
-      <a class="ghost-button link-button" href="/engines/{{ engine.slug }}/versions/{{ version.id }}/insights">{{ tr("Versions-Insights") }}</a>
-    </div>
-    <form method="get" action="/owner/versions/{{ version.id }}" class="filter-bar">
-      <select name="rating_list_id">
-        <option value="">{{ tr("Alle Rating-Listen") }}</option>
-        {% for item in rating_lists %}
-          <option value="{{ item.id }}" {% if selected_rating_list_id == item.id %}selected{% endif %}>{{ item.name }}</option>
-        {% endfor %}
-      </select>
-      <input type="text" name="opponent" value="{{ opponent_query }}" placeholder="{{ tr('Gegner suchen') }}" />
-      <button class="button secondary" type="submit">{{ tr("Filtern") }}</button>
-    </form>
-
-    <div class="table-card">
-      <table>
-        <thead>
-          <tr>
-            <th>{{ tr("Gegner") }}</th>
-            <th>W</th>
-            <th>D</th>
-            <th>L</th>
-            <th>{{ tr("Spiele") }}</th>
-            <th>{{ tr("Jobs") }}</th>
-            <th>{{ tr("Settings") }}</th>
-            <th>{{ tr("Book") }}</th>
-            <th>{{ tr("Rating-Liste") }}</th>
-            <th>{{ tr("PGN ZIPs") }}</th>
-            <th>{{ tr("Insights") }}</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for item in matches %}
-            {% set is_primary = item.engine_version_id == version.id %}
-            <tr class="clickable-row" data-href="/matches/{{ item.id }}">
-              <td>
-                {% if is_primary %}
-                  <a href="/engines/{{ item.opponent_version.engine.slug }}/versions/{{ item.opponent_version.id }}">{{ item.opponent_version.engine.name }} / {{ item.opponent_version.version_name }}</a>
-                {% else %}
-                  <a href="/engines/{{ item.engine_version.engine.slug }}/versions/{{ item.engine_version.id }}">{{ item.engine_version.engine.name }} / {{ item.engine_version.version_name }}</a>
-                {% endif %}
-              </td>
-              <td>{{ item.wins if is_primary else item.losses }}</td>
-              <td>{{ item.draws }}</td>
-              <td>{{ item.losses if is_primary else item.wins }}</td>
-              <td>{{ item.games_count }}</td>
-              <td>{{ item.job_count }}</td>
-              <td>
-                {{ item.time_control_label }}
-                {% if item.time_control_moves %}| {{ item.time_control_moves }} {{ tr("Zuege") }}{% endif %}
-                | {{ tr("Threads") }} {{ item.threads_per_engine }}
-                | {{ tr("Hash") }} {{ item.hash_per_engine }} MB
-                | {{ tr("Syzygy") }} {{ tr(item.syzygy_label) }}
-              </td>
-              <td>{{ item.opening_book.name if item.opening_book else tr("Ohne Book") }}</td>
-              <td>{{ item.rating_list.name if item.rating_list else "-" }}</td>
-              <td><a href="/owner/matches/{{ item.id }}/download.zip">{{ tr("PGN ZIPs") }}</a></td>
-              <td><a href="/matches/{{ item.id }}/insights">{{ tr("Insights") }}</a></td>
-              <td>
-                <form method="post" action="/owner/matches/{{ item.id }}/delete" class="inline-form">
-                  <input type="hidden" name="next_path" value="/owner/versions/{{ version.id }}" />
-                  <button class="icon-button danger" type="submit" title="{{ tr('Match entfernen') }}" aria-label="{{ tr('Match entfernen') }}">{{ icon("x") }}</button>
-                </form>
-              </td>
-            </tr>
-          {% else %}
-            <tr>
-              <td colspan="12">{{ tr("Keine Matches fuer diese Filter gefunden.") }}</td>
-            </tr>
-          {% endfor %}
-        </tbody>
-      </table>
     </div>
   </section>
 {% endblock %}

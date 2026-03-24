@@ -14,47 +14,60 @@
       <div class="table-card inner-table">
         <table>
           <tbody>
-            <tr><th>{{ tr("Maschinen-Fingerprint") }}</th><td><code>{{ client.machine_fingerprint or client.machine_key }}</code></td></tr>
-            <tr><th>{{ tr("Client-Session") }}</th><td><code>{{ client.machine_key }}</code></td></tr>
-            <tr><th>{{ tr("Maschinenname") }}</th><td>{{ client.machine_name }}</td></tr>
-            <tr><th>{{ tr("Nutzer") }}</th><td><a href="/users/{{ client.user.id }}">{{ client.user.display_name }}</a></td></tr>
-            <tr><th>{{ tr("System") }}</th><td>{{ client.system_name }}</td></tr>
-            <tr><th>{{ tr("Max Threads") }}</th><td>{{ client.max_threads }}</td></tr>
-            <tr><th>{{ tr("Max Hash") }}</th><td>{{ client.max_hash }} MB</td></tr>
-            <tr><th>{{ tr("Syzygy") }}</th><td>{{ tr(client.syzygy_label) }}</td></tr>
+            <tr>
+              <th>{{ tr("Maschinenname") }}</th>
+              <td>{{ client.machine_name }}</td>
+              <th>{{ tr("Nutzer") }}</th>
+              <td><a href="/users/{{ client.user.id }}">{{ client.user.display_name }}</a></td>
+            </tr>
+            <tr>
+              <th>{{ tr("Maschinen-Fingerprint") }}</th>
+              <td><code>{{ client.machine_fingerprint or "-" }}</code></td>
+              <th>{{ tr("Client-Session") }}</th>
+              <td><code>{{ client.machine_key }}</code></td>
+            </tr>
+            <tr>
+              <th>{{ tr("System") }}</th>
+              <td>{{ client.system_name }}</td>
+              <th>{{ tr("CPU") }}</th>
+              <td>{{ client.cpu_name or "-" }}</td>
+            </tr>
+            <tr>
+              <th>{{ tr("RAM") }}</th>
+              <td>{{ client_ram_summary }}</td>
+              <th>{{ tr("Syzygy") }}</th>
+              <td>{{ tr(client.syzygy_label) }}</td>
+            </tr>
+            <tr>
+              <th>{{ tr("Max Threads") }}</th>
+              <td>{{ client.max_threads }}</td>
+              <th>{{ tr("Max Hash") }}</th>
+              <td>{{ client.max_hash }} MB</td>
+            </tr>
             <tr>
               <th>{{ tr("Status") }}</th>
               <td>{% if is_online %}{{ tr("Online") }}{% else %}{{ tr("Offline") }}{% endif %} | {{ client.last_state }}</td>
+              <th>{{ tr("Erstellt") }}</th>
+              <td>{{ client.created_at.strftime("%Y-%m-%d %H:%M") }}</td>
             </tr>
-            <tr><th>{{ tr("Erstellt") }}</th><td>{{ client.created_at.strftime("%Y-%m-%d %H:%M") }}</td></tr>
-            <tr><th>{{ tr("Letzter Kontakt") }}</th><td>{{ client.last_seen_at.strftime("%Y-%m-%d %H:%M") if client.last_seen_at else "-" }}</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </article>
-
-    <article class="panel-card section-header-spaced">
-      <h2>{{ tr("CPU-Flags") }}</h2>
-      <div class="table-card inner-table">
-        <table>
-          <thead>
             <tr>
-              {% for flag_label, _flag_key in client_flag_rows %}
-                <th>{{ flag_label }}</th>
-              {% endfor %}
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              {% for _flag_label, flag_key in client_flag_rows %}
-                <td>
-                  {% if flag_key in supported_cpu_flags %}
-                    {{ icon("check", "status-icon is-supported") }}
-                  {% else %}
-                    -
-                  {% endif %}
-                </td>
-              {% endfor %}
+              <th>{{ tr("Letzter Kontakt") }}</th>
+              <td>{{ client.last_seen_at.strftime("%Y-%m-%d %H:%M") if client.last_seen_at else "-" }}</td>
+              <th>{{ tr("CPU-Flags") }}</th>
+              <td>
+                <div class="meta-row">
+                  {% for flag_label, flag_key in client_flag_rows %}
+                    <span class="runtime-chip">
+                      {{ flag_label }}
+                      {% if flag_key in supported_cpu_flags %}
+                        {{ icon("check", "status-icon is-supported") }}
+                      {% else %}
+                        -
+                      {% endif %}
+                    </span>
+                  {% endfor %}
+                </div>
+              </td>
             </tr>
           </tbody>
         </table>
