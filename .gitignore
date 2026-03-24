@@ -8,7 +8,7 @@ __pycache__/
 *.pyd
 .DS_Store
 .env
-server/data/
+server/data/*
 client/data/
 server/.coverage
 workdir/
