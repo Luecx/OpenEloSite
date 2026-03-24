@@ -12,4 +12,6 @@ server/data/
 client/data/
 server/.coverage
 workdir/
+*.db
+.idea/
 
