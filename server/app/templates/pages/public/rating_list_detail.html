@@ -63,6 +63,7 @@
               <th>{{ tr("Version") }}</th>
               <th>{{ tr("Rating") }}</th>
               <th>{{ tr("95% CI") }}</th>
+              <th>{{ tr("LOS") }}</th>
               <th>{{ tr("Spiele") }}</th>
             </tr>
           </thead>
@@ -81,11 +82,18 @@
                     -
                   {% endif %}
                 </td>
+                <td>
+                  {% if row.los_to_next is not none %}
+                    {{ "%.1f%%"|format(row.los_to_next * 100.0) }}
+                  {% else %}
+                    -
+                  {% endif %}
+                </td>
                 <td>{{ entry.games_played }}</td>
               </tr>
             {% else %}
               <tr>
-                <td colspan="6">{{ tr("Noch keine Eintraege vorhanden.") }}</td>
+                <td colspan="7">{{ tr("Noch keine Eintraege vorhanden.") }}</td>
               </tr>
             {% endfor %}
           </tbody>

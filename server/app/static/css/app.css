@@ -347,6 +347,104 @@ code {
   gap: 14px;
 }
 
+.match-hero {
+  display: grid;
+  width: 100%;
+  grid-template-columns: minmax(0, 1fr);
+  justify-content: stretch;
+  justify-items: stretch;
+  align-items: stretch;
+  gap: 18px;
+}
+
+.match-hero-grid {
+  display: grid;
+  width: 100%;
+  min-width: 0;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: center;
+  gap: clamp(16px, 2.4vw, 28px);
+  justify-self: stretch;
+}
+
+.match-side {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  align-items: center;
+  justify-content: center;
+  justify-self: stretch;
+  text-align: center;
+}
+
+.match-side-left {
+  justify-content: center;
+  text-align: center;
+}
+
+.match-side-right {
+  justify-content: center;
+  text-align: center;
+}
+
+.match-engine-link {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  color: var(--surface-strong);
+  font-size: clamp(1.45rem, 3vw, 2.35rem);
+  font-weight: 800;
+  line-height: 1.08;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+.match-engine-link:hover {
+  text-decoration: none;
+}
+
+.match-side-left .match-engine-link {
+  text-align: center;
+}
+
+.match-side-right .match-engine-link {
+  text-align: center;
+}
+
+.match-hero-center {
+  display: grid;
+  width: 100%;
+  justify-items: center;
+  gap: 8px;
+  text-align: center;
+}
+
+.match-versus {
+  color: var(--muted);
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.match-scoreline {
+  font-size: clamp(1.15rem, 2.4vw, 1.5rem);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.1em;
+}
+
+.match-bayeselo {
+  color: var(--muted);
+  font-size: 1.05rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.match-hero-actions {
+  margin-top: 4px;
+}
+
 .summary-grid,
 .card-grid,
 .list-grid,
@@ -1312,6 +1410,17 @@ th {
   .nav-row {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .match-hero-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .match-side-left,
+  .match-side-right {
+    justify-content: center;
+    text-align: center;
   }
 
   .brand-logo-link {

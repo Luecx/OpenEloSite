@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 from pathlib import Path
 
 from fastapi import APIRouter
@@ -50,6 +51,29 @@ def _format_ram_summary(ram_total_mb: int | None, ram_speed_mt_s: int | None) ->
     if speed > 0:
         summary = f"{summary} @ {speed} MT/s"
     return summary
+
+
+def _normal_cdf(value: float) -> float:
+    return 0.5 * (1.0 + math.erf(value / math.sqrt(2.0)))
+
+
+def _pairwise_los(entry_a, entry_b) -> float | None:
+    if entry_a is None or entry_b is None:
+        return None
+    stderr_a = float(entry_a.rating_stderr) if entry_a.rating_stderr is not None else None
+    stderr_b = float(entry_b.rating_stderr) if entry_b.rating_stderr is not None else None
+    if stderr_a is None or stderr_b is None:
+        return None
+
+    combined_stderr = math.sqrt(stderr_a * stderr_a + stderr_b * stderr_b)
+    delta = float(entry_a.rating) - float(entry_b.rating)
+    if combined_stderr <= 0:
+        if delta > 0:
+            return 1.0
+        if delta < 0:
+            return 0.0
+        return 0.5
+    return max(0.0, min(1.0, _normal_cdf(delta / combined_stderr)))
 
 
 @router.get("/logo.png")
@@ -383,6 +407,11 @@ def rating_list_detail(
     if rating_list is None:
         raise HTTPException(status_code=404, detail="Rating list not found")
     ranking_view = "all" if (view or "").strip().lower() == "all" else "best"
+    ranking_entries = engine_repository.list_leaderboard(
+        db,
+        rating_list_id=rating_list.id,
+        best_per_engine=(ranking_view == "best"),
+    )
 
     context = build_context(
         request,
@@ -391,15 +420,12 @@ def rating_list_detail(
         all_rating_lists_url="/rating-lists",
         ranking_view=ranking_view,
         ranking_rows=[
-            {"display_rank": index, "entry": entry}
-            for index, entry in enumerate(
-                engine_repository.list_leaderboard(
-                    db,
-                    rating_list_id=rating_list.id,
-                    best_per_engine=(ranking_view == "best"),
-                ),
-                start=1,
-            )
+            {
+                "display_rank": index + 1,
+                "entry": entry,
+                "los_to_next": _pairwise_los(entry, ranking_entries[index + 1]) if index + 1 < len(ranking_entries) else None,
+            }
+            for index, entry in enumerate(ranking_entries)
         ],
         page_title=rating_list.name,
     )

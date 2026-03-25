@@ -4,20 +4,40 @@
 {% block content %}
   <section class="section">
     <a class="back-link" href="/engines/{{ match.engine_version.engine.slug }}/versions/{{ match.engine_version.id }}">← {{ tr("Zurueck zur Version") }}</a>
-    <div class="page-hero compact-hero">
-      <div>
-        <p class="eyebrow">{{ tr("Match") }} #{{ match.id }}</p>
-        <h1>{{ match.engine_version_label }} vs {{ match.opponent_version_label }}</h1>
-      </div>
-      <div class="meta-stack">
-        <a class="ghost-button link-button" href="/matches/{{ match.id }}/insights">{{ tr("Match-Insights") }}</a>
-        <a class="ghost-button link-button" href="/matches/{{ match.id }}/download.zip">{{ tr("Match PGN ZIP herunterladen") }}</a>
+    <div class="page-hero compact-hero match-hero">
+      <div class="hero-header">
+        <div>
+          <p class="eyebrow">{{ tr("Match") }} #{{ match.id }}</p>
+        </div>
         {% if can_manage_match %}
-          <form method="post" action="/owner/matches/{{ match.id }}/delete" class="inline-form">
+          <form method="post" action="/owner/matches/{{ match.id }}/delete" class="inline-form" data-confirm="{{ tr('Match wirklich entfernen?') }}">
             <input type="hidden" name="next_path" value="/engines/{{ match.engine_version.engine.slug }}/versions/{{ match.engine_version.id }}" />
             <button class="icon-button danger" type="submit" title="{{ tr('Match entfernen') }}" aria-label="{{ tr('Match entfernen') }}">{{ icon("x") }}</button>
           </form>
         {% endif %}
+      </div>
+      <div class="match-hero-grid">
+        <div class="match-side match-side-left">
+          <a class="match-engine-link" href="/engines/{{ match.engine_version.engine.slug }}/versions/{{ match.engine_version.id }}">{{ match.engine_version_label }}</a>
+        </div>
+        <div class="match-hero-center">
+          <div class="match-versus">vs.</div>
+          <div class="match-scoreline">{{ match.wins }} - {{ match.draws }} - {{ match.losses }}</div>
+          <div class="match-bayeselo">
+            {% if match_summary.elo is not none %}
+              {{ "%.1f"|format(match_summary.elo) }} +- {{ "%.1f"|format((match_summary.elo_upper - match_summary.elo_lower) / 2.0) }}
+            {% else %}
+              -
+            {% endif %}
+          </div>
+          <div class="action-cluster match-hero-actions">
+            <a class="icon-button" href="/matches/{{ match.id }}/insights" title="{{ tr('Match-Insights') }}" aria-label="{{ tr('Match-Insights') }}">{{ icon("chart") }}</a>
+            <a class="icon-button" href="/matches/{{ match.id }}/download.zip" title="{{ tr('Match PGN ZIP herunterladen') }}" aria-label="{{ tr('Match PGN ZIP herunterladen') }}">{{ icon("download") }}</a>
+          </div>
+        </div>
+        <div class="match-side match-side-right">
+          <a class="match-engine-link" href="/engines/{{ match.opponent_version.engine.slug }}/versions/{{ match.opponent_version.id }}">{{ match.opponent_version_label }}</a>
+        </div>
       </div>
     </div>
   </section>
@@ -43,18 +63,6 @@
             <td>{{ match.opening_book.name if match.opening_book else "-" }}</td>
             <th>{{ tr("Syzygy") }}</th>
             <td>{{ tr(match.syzygy_label) }}</td>
-          </tr>
-          <tr>
-            <th>{{ tr("Gesamtresultat") }}</th>
-            <td>{{ match.result_text or match.status }}</td>
-            <th>BayesElo</th>
-            <td>
-              {% if match_summary.elo is not none %}
-                {{ "%.1f"|format(match_summary.elo) }} Elo +- {{ "%.1f"|format((match_summary.elo_upper - match_summary.elo_lower) / 2.0) }}
-              {% else %}
-                -
-              {% endif %}
-            </td>
           </tr>
           <tr>
             <th>{{ tr("Punktquote") }}</th>
@@ -159,7 +167,7 @@
               </td>
               {% if can_manage_match %}
                 <td>
-                  <form method="post" action="/owner/jobs/{{ job.id }}/delete" class="inline-form">
+                  <form method="post" action="/owner/jobs/{{ job.id }}/delete" class="inline-form" data-confirm="{{ tr('Job wirklich entfernen?') }}">
                     <input type="hidden" name="next_path" value="/matches/{{ match.id }}" />
                     <button class="icon-button danger" type="submit" title="{{ tr('Job entfernen') }}" aria-label="{{ tr('Job entfernen') }}">{{ icon("x") }}</button>
                   </form>
