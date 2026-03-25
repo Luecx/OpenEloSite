@@ -12,6 +12,7 @@ CLIENT_SOURCE_ROOT = REPO_ROOT / "client"
 BUNDLE_ROOT = Path(__file__).resolve().parents[2] / "data" / "client-bundles"
 MANIFEST_PATH = BUNDLE_ROOT / "manifest.json"
 _FIXED_ZIP_DATETIME = (2024, 1, 1, 0, 0, 0)
+_CURRENT_BUNDLE: dict | None = None
 
 
 def _should_include(relative_path: Path) -> bool:
@@ -91,7 +92,7 @@ def _build_bundle(bundle_path: Path) -> None:
             archive.writestr(zip_info, source_path.read_bytes())
 
 
-def ensure_client_bundle() -> dict:
+def _build_current_bundle() -> dict:
     bundle_hash = _tree_hash(CLIENT_SOURCE_ROOT)
     file_name = _bundle_name(bundle_hash)
     bundle_path = BUNDLE_ROOT / file_name
@@ -121,3 +122,11 @@ def ensure_client_bundle() -> dict:
         "path": bundle_path,
         "built_at": built_at,
     }
+
+
+def ensure_client_bundle() -> dict:
+    global _CURRENT_BUNDLE
+    if _CURRENT_BUNDLE is not None:
+        return dict(_CURRENT_BUNDLE)
+    _CURRENT_BUNDLE = _build_current_bundle()
+    return dict(_CURRENT_BUNDLE)
