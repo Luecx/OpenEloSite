@@ -99,14 +99,35 @@
           document.cookie = name + "=" + encodeURIComponent(value) + "; path=/; max-age=31536000; SameSite=Lax";
         }
 
+        function updateIndicator(group) {
+          var active = group.querySelector(".choice-button.is-active");
+          if (!active) return;
+          group.style.setProperty("--indicator-left", active.offsetLeft + "px");
+          group.style.setProperty("--indicator-width", active.offsetWidth + "px");
+        }
+
+        document.querySelectorAll(".choice-group").forEach(function (group) {
+          updateIndicator(group);
+        });
+        requestAnimationFrame(function () {
+          document.querySelectorAll(".choice-group").forEach(function (group) {
+            group.classList.add("ready");
+          });
+        });
+
         document.querySelectorAll("[data-theme-choice]").forEach(function (button) {
           button.addEventListener("click", function () {
             var theme = button.getAttribute("data-theme-choice");
+            document.documentElement.classList.add("theme-transition");
             document.documentElement.dataset.theme = theme;
             setCookie("openeelo_theme", theme);
             document.querySelectorAll("[data-theme-choice]").forEach(function (candidate) {
               candidate.classList.toggle("is-active", candidate === button);
             });
+            updateIndicator(button.closest(".choice-group"));
+            setTimeout(function () {
+              document.documentElement.classList.remove("theme-transition");
+            }, 450);
           });
         });
 
@@ -114,6 +135,10 @@
           button.addEventListener("click", function () {
             var language = button.getAttribute("data-language");
             setCookie("openeelo_lang", language);
+            document.querySelectorAll("[data-language]").forEach(function (candidate) {
+              candidate.classList.toggle("is-active", candidate === button);
+            });
+            updateIndicator(button.closest(".choice-group"));
             window.location.reload();
           });
         });
