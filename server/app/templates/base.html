@@ -63,6 +63,11 @@
             </div>
           </div>
           <div class="nav-row">
+            <button class="nav-toggle" aria-label="Menu" aria-expanded="false">
+              <span class="nav-toggle-bar"></span>
+              <span class="nav-toggle-bar"></span>
+              <span class="nav-toggle-bar"></span>
+            </button>
             <nav class="nav">
               <a href="/">{{ tr("Start") }}</a>
               <a href="/engines">{{ tr("Engines") }}</a>
@@ -84,10 +89,10 @@
 
       <main class="wrap main-content">
         {% if message %}
-          <div class="notice success">{{ message }}</div>
+          <div class="notice success" data-toast>{{ message }}</div>
         {% endif %}
         {% if error %}
-          <div class="notice error">{{ error }}</div>
+          <div class="notice error" data-toast>{{ error }}</div>
         {% endif %}
 
         {% block content %}{% endblock %}
@@ -189,31 +194,7 @@
           });
         });
 
-      document.querySelectorAll("[data-close-inline-editor]").forEach(function (button) {
-        button.addEventListener("click", function () {
-          var details = button.closest("details");
-          if (details) {
-            details.open = false;
-          }
-        });
-      });
-
-      document.querySelectorAll("details.inline-editor").forEach(function (details) {
-        document.addEventListener("click", function (event) {
-          if (details.open && !details.contains(event.target)) {
-            details.open = false;
-          }
-        });
-      });
-
-      document.addEventListener("keydown", function (event) {
-        if (event.key !== "Escape") {
-          return;
-        }
-        document.querySelectorAll("details.inline-editor[open]").forEach(function (details) {
-          details.open = false;
-        });
-      });
+      /* inline-editor close handlers moved to bottom with animation support */
 
         document.querySelectorAll("[data-href]").forEach(function (element) {
           element.addEventListener("click", function (event) {
@@ -231,6 +212,100 @@
               event.preventDefault();
             }
           });
+        });
+
+        /* ── Toast notifications ── */
+        var toastWrap = document.createElement("div");
+        toastWrap.className = "toast-wrap";
+        document.body.appendChild(toastWrap);
+
+        function dismissToast(toast) {
+          if (toast.classList.contains("is-dismissing")) return;
+          toast.classList.add("is-dismissing");
+          toast.addEventListener("animationend", function () {
+            toast.remove();
+          });
+        }
+
+        document.querySelectorAll("[data-toast]").forEach(function (notice) {
+          var toast = document.createElement("div");
+          toast.className =
+            "toast " +
+            (notice.classList.contains("error") ? "error" : "success");
+          toast.textContent = notice.textContent.trim();
+          toast.addEventListener("click", function () {
+            dismissToast(toast);
+          });
+          toastWrap.appendChild(toast);
+          notice.remove();
+          setTimeout(function () {
+            dismissToast(toast);
+          }, 4000);
+        });
+
+        if (window.location.search.indexOf("message=") !== -1) {
+          history.replaceState(null, "", window.location.pathname);
+        }
+
+        /* ── Hamburger menu ── */
+        var navToggle = document.querySelector(".nav-toggle");
+        var nav = document.querySelector(".nav");
+        if (navToggle && nav) {
+          navToggle.addEventListener("click", function () {
+            var open = nav.classList.toggle("is-open");
+            navToggle.classList.toggle("is-active", open);
+            navToggle.setAttribute("aria-expanded", String(open));
+          });
+        }
+
+        /* ── Inline-editor close animation ── */
+        function closeEditor(details) {
+          if (!details || !details.open) return;
+          details.classList.add("is-closing");
+          var panel = details.querySelector(".inline-editor-panel");
+          if (panel) {
+            panel.addEventListener(
+              "animationend",
+              function () {
+                details.open = false;
+                details.classList.remove("is-closing");
+              },
+              { once: true }
+            );
+          } else {
+            details.open = false;
+            details.classList.remove("is-closing");
+          }
+        }
+
+        document
+          .querySelectorAll("[data-close-inline-editor]")
+          .forEach(function (button) {
+            button.removeEventListener("click", button._closeHandler);
+            button._closeHandler = function (e) {
+              e.preventDefault();
+              closeEditor(button.closest("details"));
+            };
+            button.addEventListener("click", button._closeHandler);
+          });
+
+        document
+          .querySelectorAll("details.inline-editor")
+          .forEach(function (details) {
+            document.addEventListener("click", function (event) {
+              if (details.open && !details.contains(event.target)) {
+                closeEditor(details);
+              }
+            });
+          });
+
+        document.addEventListener("keydown", function (event) {
+          if (event.key !== "Escape") return;
+          document
+            .querySelectorAll("details.inline-editor[open]")
+            .forEach(function (details) {
+              closeEditor(details);
+            });
         });
       })();
     </script>

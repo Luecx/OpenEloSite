@@ -1,9 +1,10 @@
 {% extends "base.html" %}
 {% from "components/icons.html" import icon %}
+{% from "components/breadcrumb.html" import breadcrumb %}
 
 {% block content %}
   <section class="section">
-    <a class="back-link" href="/owner/versions/{{ version.id }}">← {{ tr("Zurueck zur Version") }}</a>
+    {{ breadcrumb([{"href": "/engines", "label": tr("Engines")}, {"href": "/owner/versions/" ~ version.id, "label": version.version_name}, {"href": "", "label": tr("Artifact bearbeiten")}]) }}
     <div class="form-card">
       <div class="section-header compact">
         <h1>{{ tr("Artifact bearbeiten") }}</h1>

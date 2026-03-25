@@ -1,9 +1,10 @@
 {% extends "base.html" %}
 {% from "components/icons.html" import icon %}
+{% from "components/breadcrumb.html" import breadcrumb %}
 
 {% block content %}
   <section class="section">
-    <a class="back-link" href="/admin/system">← {{ tr("Zurueck zu Systemstatus") }}</a>
+    {{ breadcrumb([{"href": "/admin", "label": tr("Admin")}, {"href": "/admin/system", "label": tr("Systemstatus")}, {"href": "", "label": tr("Bench")}]) }}
     <div class="section-header">
       <div>
         <h1>{{ tr("Bench") }}</h1>

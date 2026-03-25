@@ -1,9 +1,10 @@
 {% extends "base.html" %}
 {% from "components/icons.html" import icon %}
+{% from "components/breadcrumb.html" import breadcrumb %}
 
 {% block content %}
   <section class="section">
-    <a class="back-link" href="{{ all_rating_lists_url or '/rating-lists' }}">← {{ tr("Zurueck zu Rating-Listen") }}</a>
+    {{ breadcrumb([{"href": all_rating_lists_url or "/rating-lists", "label": tr("Rating-Listen")}, {"href": "", "label": rating_list.name}]) }}
     <div class="page-hero page-hero--full">
       <div class="hero-header">
         <div>

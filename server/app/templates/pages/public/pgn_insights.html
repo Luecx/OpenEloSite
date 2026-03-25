@@ -1,9 +1,10 @@
 {% extends "base.html" %}
 {% from "components/icons.html" import icon %}
+{% from "components/breadcrumb.html" import breadcrumb %}
 
 {% block content %}
   <section class="section">
-    <a class="back-link" href="{{ back_url }}">← {{ tr(back_label) }}</a>
+    {{ breadcrumb([{"href": back_url, "label": tr(back_label)}, {"href": "", "label": insights_title}]) }}
     <div class="page-hero compact-hero">
       <div>
         <p class="eyebrow">{{ tr(insights_kind) }}</p>

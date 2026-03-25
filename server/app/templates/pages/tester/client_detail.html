@@ -1,9 +1,10 @@
 {% extends "base.html" %}
 {% from "components/icons.html" import icon %}
+{% from "components/breadcrumb.html" import breadcrumb %}
 
 {% block content %}
   <section class="section">
-    <a class="back-link" href="/clients">← {{ tr("Back to Clients") }}</a>
+    {{ breadcrumb([{"href": "/clients", "label": tr("Clients")}, {"href": "", "label": client.machine_name}]) }}
     <div class="section-header">
       <h1>{{ client.machine_name }}</h1>
       <p class="muted">{{ tr("Der Client meldet sich mit Heartbeats beim Server und zieht Jobs selbststaendig nach.") }}</p>

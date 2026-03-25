@@ -1,9 +1,10 @@
 {% extends "base.html" %}
 {% from "components/icons.html" import icon %}
+{% from "components/breadcrumb.html" import breadcrumb %}
 
 {% block content %}
   <section class="section">
-    <a class="back-link" href="{% if rating_list %}/rating-lists/{{ rating_list.slug }}{% else %}/rating-lists{% endif %}">← {{ tr("Zurueck zu Rating-Listen") }}</a>
+    {{ breadcrumb([{"href": "/rating-lists", "label": tr("Rating-Listen")}, {"href": "", "label": rating_list.name if rating_list else tr("Neue Rating-Liste")}]) }}
     <div class="form-card">
       <div class="section-header compact">
         <h1>{% if rating_list %}{{ tr("Rating-Liste bearbeiten") }}{% else %}{{ tr("Neue Rating-Liste") }}{% endif %}</h1>

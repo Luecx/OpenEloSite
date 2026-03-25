@@ -1,9 +1,10 @@
 {% extends "base.html" %}
 {% from "components/icons.html" import icon %}
+{% from "components/breadcrumb.html" import breadcrumb %}
 
 {% block content %}
   <section class="section">
-    <a class="back-link" href="/engines/{{ match.engine_version.engine.slug }}/versions/{{ match.engine_version.id }}">← {{ tr("Zurueck zur Version") }}</a>
+    {{ breadcrumb([{"href": "/engines", "label": tr("Engines")}, {"href": "/engines/" ~ match.engine_version.engine.slug, "label": match.engine_version.engine.name}, {"href": "/engines/" ~ match.engine_version.engine.slug ~ "/versions/" ~ match.engine_version.id, "label": match.engine_version.tag}, {"href": "", "label": tr("Match") ~ " #" ~ match.id}]) }}
     <div class="page-hero compact-hero match-hero">
       <div class="hero-header">
         <div>

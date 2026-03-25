@@ -1,8 +1,10 @@
 {% extends "base.html" %}
 
+{% from "components/breadcrumb.html" import breadcrumb %}
+
 {% block content %}
   <section class="section">
-    <a class="back-link" href="/users">← {{ tr("Zurueck zu den Nutzern") }}</a>
+    {{ breadcrumb([{"href": "/users", "label": tr("Users")}, {"href": "", "label": profile_user.display_name}]) }}
     <div class="page-hero compact-hero">
       <div>
         <p class="eyebrow">{{ tr("Nutzer") }}</p>
