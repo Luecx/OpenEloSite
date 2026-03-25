@@ -20,7 +20,7 @@ def _run(command: list[str], cwd: Path, label: str) -> None:
     if process.returncode == 0:
         return
     output = "\n".join(part for part in [process.stdout.strip(), process.stderr.strip()] if part).strip()
-    raise RuntimeError(f"{label} fehlgeschlagen.\n{output or f'Rueckgabecode {process.returncode}'}")
+    raise RuntimeError(f"{label} failed.\n{output or f'Return code {process.returncode}'}")
 
 
 def _run_bash(script: str, cwd: Path, label: str) -> None:
@@ -28,7 +28,7 @@ def _run_bash(script: str, cwd: Path, label: str) -> None:
     if process.returncode == 0:
         return
     output = "\n".join(part for part in [process.stdout.strip(), process.stderr.strip()] if part).strip()
-    raise RuntimeError(f"{label} fehlgeschlagen.\n{output or f'Rueckgabecode {process.returncode}'}")
+    raise RuntimeError(f"{label} failed.\n{output or f'Return code {process.returncode}'}")
 
 
 def _binary_from_path() -> Path | None:
@@ -47,11 +47,11 @@ def ensure_fastchess(workdir: Path) -> FastchessSetup:
 
     git_executable = shutil.which("git")
     if git_executable is None:
-        raise RuntimeError("git wurde nicht gefunden. fast-chess kann nicht automatisch geclont werden.")
+        raise RuntimeError("git was not found. fast-chess cannot be cloned automatically.")
 
     repo_dir = workdir / "fast-chess"
     if repo_dir.exists() and not (repo_dir / ".git").exists():
-        raise RuntimeError(f"{repo_dir} existiert, ist aber kein git-Repository.")
+        raise RuntimeError(f"{repo_dir} exists, but is not a git repository.")
 
     if not repo_dir.exists():
         _run([git_executable, "clone", "--depth", "1", FASTCHESS_REPO_URL, str(repo_dir)], workdir, "fast-chess clone")
@@ -66,4 +66,4 @@ def ensure_fastchess(workdir: Path) -> FastchessSetup:
             _run([str(candidate), "-version"], candidate.parent, "fast-chess check")
             return FastchessSetup(path=candidate.resolve(), git_target=FASTCHESS_REPO_URL)
 
-    raise RuntimeError(f"fast-chess wurde gebaut, aber keine Binary gefunden: {repo_dir}")
+    raise RuntimeError(f"fast-chess was built, but no binary was found: {repo_dir}")

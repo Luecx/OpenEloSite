@@ -11,9 +11,9 @@ class ServerClient:
         self.server_url = server_url.rstrip("/")
         self.access_key = access_key.strip()
         if not self.server_url:
-            raise ValueError("server URL fehlt")
+            raise ValueError("server URL is required")
         if not self.access_key:
-            raise ValueError("access key fehlt")
+            raise ValueError("access key is required")
 
     def post(self, path: str, payload: dict) -> dict:
         request = urllib.request.Request(
@@ -22,6 +22,10 @@ class ServerClient:
             headers=self._headers({"Content-Type": "application/json"}),
             method="POST",
         )
+        return self._read_json(request)
+
+    def get_json(self, path: str) -> dict:
+        request = urllib.request.Request(url=self._url(path), headers=self._headers(), method="GET")
         return self._read_json(request)
 
     def download(self, path: str, target_path: Path) -> dict[str, str]:
@@ -57,4 +61,4 @@ class ServerClient:
 
     def _http_error_message(self, error: urllib.error.HTTPError) -> str:
         body = error.read().decode("utf-8", errors="ignore").strip()
-        return f"Serverfehler {error.code}: {body or error.reason}"
+        return f"Server error {error.code}: {body or error.reason}"

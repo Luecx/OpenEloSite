@@ -43,7 +43,7 @@ class JobRunner:
 
     def configure_bench(self, bench_path: Path, reference_nps: int) -> None:
         if reference_nps <= 0:
-            raise ValueError("bench reference nps muss groesser als 0 sein")
+            raise ValueError("bench reference NPS must be greater than 0")
         self.bench_path = bench_path.expanduser().resolve()
         self.bench_reference_nps = int(reference_nps)
 
@@ -54,7 +54,7 @@ class JobRunner:
 
         concurrency = self.max_threads // max(1, int(job["threads_per_engine"]))
         if concurrency <= 0:
-            raise RuntimeError("threads_per_engine ist groesser als die verfuegbaren Client-Threads.")
+            raise RuntimeError("threads_per_engine is greater than the available client threads.")
 
         bench_result = self._run_bench()
         effective_tc = self._scaled_time_control(job, bench_result.time_factor)
@@ -121,16 +121,16 @@ class JobRunner:
         runtime_seconds = max(1, int(time.monotonic() - start_time))
 
         if process.returncode != 0:
-            raise RuntimeError(log_text or f"fast-chess beendet mit Rueckgabecode {process.returncode}")
+            raise RuntimeError(log_text or f"fast-chess exited with return code {process.returncode}")
 
         if not pgn_path.exists():
-            raise RuntimeError("fast-chess hat keine PGN-Datei erzeugt.")
+            raise RuntimeError("fast-chess did not produce a PGN file.")
 
         pgn_text = pgn_path.read_text(errors="ignore")
         wins, draws, losses = self._count_results(pgn_text, engine1_name)
         games_count = wins + draws + losses
         if games_count <= 0:
-            raise RuntimeError("Keine gueltigen Resultate in der PGN-Datei gefunden.")
+            raise RuntimeError("No valid results were found in the PGN file.")
         pgn_zip_base64 = self._build_pgn_zip_base64(pgn_path)
 
         return {
@@ -149,10 +149,10 @@ class JobRunner:
             required = sorted({item.strip().lower() for item in artifact.get("required_cpu_flags", []) if item})
             missing = [flag for flag in required if flag not in cpu_flags]
             if missing:
-                raise RuntimeError(f"{engine_key} benoetigt nicht vorhandene CPU-Flags: {', '.join(missing)}")
+                raise RuntimeError(f"{engine_key} requires unsupported CPU flags: {', '.join(missing)}")
             artifact_system = (artifact.get("system_name") or "").strip().lower()
             if artifact_system and artifact_system != system_name.strip().lower():
-                raise RuntimeError(f"{engine_key} benoetigt System {artifact_system}, Client ist {system_name}")
+                raise RuntimeError(f"{engine_key} requires system {artifact_system}, but client is {system_name}")
 
     def _prepare_engine(self, engine: dict, target_dir: Path, label: str, server: ServerClient) -> Path:
         target_dir.mkdir(parents=True, exist_ok=True)
@@ -235,9 +235,9 @@ class JobRunner:
 
     def _run_bench(self) -> BenchResult:
         if self.bench_path is None or self.bench_reference_nps is None:
-            raise RuntimeError("Bench ist nicht konfiguriert.")
+            raise RuntimeError("Bench is not configured.")
         if not self.bench_path.exists():
-            raise RuntimeError(f"Bench executable nicht gefunden: {self.bench_path}")
+            raise RuntimeError(f"Bench executable not found: {self.bench_path}")
 
         process = subprocess.run(
             [str(self.bench_path), "bench", "exit"],
@@ -248,14 +248,14 @@ class JobRunner:
         )
         output = "\n".join(part for part in [process.stdout.strip(), process.stderr.strip()] if part).strip()
         if process.returncode != 0:
-            raise RuntimeError(output or f"Bench fehlgeschlagen mit Rueckgabecode {process.returncode}")
+            raise RuntimeError(output or f"Bench failed with return code {process.returncode}")
 
         matches = re.findall(r"OVERALL:\s+\d+\s+nodes\s+(\d+)\s+nps", output, flags=re.IGNORECASE)
         if not matches:
-            raise RuntimeError("Bench-Ausgabe enthaelt keinen OVERALL-NPS-Wert.")
+            raise RuntimeError("Bench output does not contain an OVERALL NPS value.")
         measured_nps = int(matches[-1])
         if measured_nps <= 0:
-            raise RuntimeError("Bench-NPS ist ungueltig.")
+            raise RuntimeError("Bench NPS is invalid.")
 
         factor = self.bench_reference_nps / measured_nps
         return BenchResult(
@@ -337,7 +337,7 @@ class JobRunner:
             return f"{name} {version_name}"
         if name:
             return name
-        raise RuntimeError("Engine-Name fehlt im Job.")
+        raise RuntimeError("Engine name is missing from the job.")
 
     def _rounds_for_job(self, job: dict) -> int:
         num_games = max(1, int(job["num_games"]))

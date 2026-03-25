@@ -40,7 +40,7 @@ def _build_job_payload(db, client, assignment) -> dict:
     engine_2_version = db.get(EngineVersion, assignment.opponent_version_id)
     rating_list = db.get(RatingList, assignment.rating_list_id)
     if engine_1_version is None or engine_2_version is None or rating_list is None:
-        raise HTTPException(status_code=500, detail="Assignment unvollstaendig")
+        raise HTTPException(status_code=500, detail="Assignment is incomplete")
 
     book = rating_list.opening_book
     if book is not None:
@@ -49,7 +49,7 @@ def _build_job_payload(db, client, assignment) -> dict:
     engine_1_artifact = engine_repository.pick_compatible_artifact(engine_1_version, client.system_name, client.cpu_flags)
     engine_2_artifact = engine_repository.pick_compatible_artifact(engine_2_version, client.system_name, client.cpu_flags)
     if engine_1_artifact is None or engine_2_artifact is None:
-        raise HTTPException(status_code=500, detail="Kein passendes Artifact fuer den Client gefunden")
+        raise HTTPException(status_code=500, detail="No compatible artifact was found for the client")
 
     return {
         "job_id": assignment.id,
@@ -156,7 +156,7 @@ class ClientTaskThread(threading.Thread):
     def _handle_next_job(self, user_id: int, payload: dict[str, Any]) -> dict:
         client_id = payload.get("client_id")
         if not client_id:
-            raise HTTPException(status_code=400, detail="client_id fehlt")
+            raise HTTPException(status_code=400, detail="client_id is required")
 
         db = SessionLocal()
         try:
@@ -178,7 +178,7 @@ class ClientTaskThread(threading.Thread):
     def _handle_complete_job(self, user_id: int, job_id: str, payload: dict[str, Any]) -> dict:
         client_id = payload.get("client_id")
         if not client_id:
-            raise HTTPException(status_code=400, detail="client_id fehlt")
+            raise HTTPException(status_code=400, detail="client_id is required")
 
         db = SessionLocal()
         try:

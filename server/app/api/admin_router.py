@@ -189,7 +189,6 @@ def bench_page(
     context = build_context(
         request,
         current_user,
-        reference_nps=bench_service.get_reference_nps(),
         bench_artifacts=bench_service.list_bench_artifacts(),
         edit_artifact=edit_artifact,
         page_title="Bench",
@@ -197,21 +196,11 @@ def bench_page(
     return templates.TemplateResponse("pages/admin/bench.html", context)
 
 
-@router.post("/bench/reference")
-def update_bench_reference(
-    reference_nps: int = Form(...),
-    db: Session = Depends(get_db),
-    current_user=Depends(require_role(ADMIN_ROLE)),
-):
-    bench_service.set_reference_nps(reference_nps)
-    audit_service.log_action(db, current_user.id, "bench_reference_update", "bench", "reference", "Bench-Referenz aktualisiert.")
-    return redirect_to("/admin/bench", "Bench-Referenz gespeichert.")
-
-
 @router.post("/bench/artifacts")
 def create_bench_artifact(
     system_name: str = Form(...),
     required_cpu_flags: list[str] = Form(default=[]),
+    reference_nps: int = Form(...),
     upload: UploadFile = File(...),
     db: Session = Depends(get_db),
     current_user=Depends(require_role(ADMIN_ROLE)),
@@ -224,6 +213,7 @@ def create_bench_artifact(
         content_hash=content_hash,
         system_name=system_name,
         required_cpu_flags=required_cpu_flags,
+        reference_nps=reference_nps,
     )
     audit_service.log_action(db, current_user.id, "bench_artifact_create", "bench", artifact["id"], "Bench-Artifact hochgeladen.")
     return redirect_to("/admin/bench", "Bench-Artifact hochgeladen.")
@@ -234,10 +224,11 @@ def update_bench_artifact(
     artifact_id: str,
     system_name: str = Form(...),
     required_cpu_flags: list[str] = Form(default=[]),
+    reference_nps: int = Form(...),
     db: Session = Depends(get_db),
     current_user=Depends(require_role(ADMIN_ROLE)),
 ):
-    artifact = bench_service.update_bench_artifact(artifact_id, system_name, required_cpu_flags)
+    artifact = bench_service.update_bench_artifact(artifact_id, system_name, required_cpu_flags, reference_nps)
     if artifact is None:
         return redirect_to("/admin/bench", "Bench-Artifact nicht gefunden.")
     audit_service.log_action(db, current_user.id, "bench_artifact_update", "bench", artifact_id, "Bench-Artifact aktualisiert.")
@@ -255,6 +246,20 @@ def delete_bench_artifact(
         return redirect_to("/admin/bench", "Bench-Artifact nicht gefunden.")
     audit_service.log_action(db, current_user.id, "bench_artifact_delete", "bench", artifact_id, "Bench-Artifact entfernt.")
     return redirect_to("/admin/bench", "Bench-Artifact entfernt.")
+
+
+@router.post("/bench/artifacts/{artifact_id}/move")
+def move_bench_artifact(
+    artifact_id: str,
+    direction: str = Form(...),
+    db: Session = Depends(get_db),
+    current_user=Depends(require_role(ADMIN_ROLE)),
+):
+    artifact = bench_service.move_bench_artifact_priority(artifact_id, direction)
+    if artifact is None:
+        return redirect_to("/admin/bench", "Bench-Artifact nicht gefunden.")
+    audit_service.log_action(db, current_user.id, "bench_artifact_reorder", "bench", artifact_id, f"Bench-Artifact {direction}.")
+    return redirect_to("/admin/bench", "Bench-Artifact verschoben.")
 
 
 @router.post("/rating-lists")

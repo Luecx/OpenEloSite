@@ -75,7 +75,7 @@ class WorkspaceService:
             if len(fields) >= 4 and "/" in fields[0] and fields[1] in {"w", "b"}:
                 return "epd"
             break
-        raise RuntimeError(f"Opening-Book-Format konnte nicht erkannt werden: {path}")
+        raise RuntimeError(f"Could not detect opening book format: {path}")
 
     def _cached_book(self, file_name: str, expected_hash: str) -> Path | None:
         target_name = Path(file_name).name if file_name else ""
@@ -126,9 +126,9 @@ class WorkspaceService:
         expected_hash = (artifact.get("hash") or "").strip()
         source = (artifact.get("source") or "").strip()
         if not file_name:
-            raise RuntimeError("Artifact-Dateiname fehlt im Job.")
+            raise RuntimeError("Artifact file name is missing from the job.")
         if not source:
-            raise RuntimeError("Artifact-Quelle fehlt im Job.")
+            raise RuntimeError("Artifact source is missing from the job.")
 
         target_dir.mkdir(parents=True, exist_ok=True)
         temp_path = target_dir / f"{_safe_name(file_name)}.tmp"
@@ -141,7 +141,7 @@ class WorkspaceService:
             actual_hash = self.sha256_for_file(final_path)
             if actual_hash != expected_hash:
                 final_path.unlink(missing_ok=True)
-                raise RuntimeError(f"Artifact-Hash stimmt nicht. Erwartet {expected_hash}, erhalten {actual_hash}")
+                raise RuntimeError(f"Artifact hash mismatch. Expected {expected_hash}, got {actual_hash}")
         final_path.chmod(0o755)
         return final_path
 
@@ -162,7 +162,7 @@ class WorkspaceService:
         expected_hash = (book.get("hash") or "").strip()
         source = (book.get("source") or "").strip()
         if not source:
-            raise RuntimeError("Opening-Book-Quelle fehlt im Job.")
+            raise RuntimeError("Opening book source is missing from the job.")
 
         if expected_hash:
             cached = self._cached_book(file_name, expected_hash)
@@ -183,6 +183,6 @@ class WorkspaceService:
             actual_hash = self.sha256_for_file(final_path)
             if actual_hash != expected_hash:
                 final_path.unlink(missing_ok=True)
-                raise RuntimeError(f"Book-Hash stimmt nicht. Erwartet {expected_hash}, erhalten {actual_hash}")
+                raise RuntimeError(f"Book hash mismatch. Expected {expected_hash}, got {actual_hash}")
 
         return ResolvedBook(path=final_path, status="downloaded")

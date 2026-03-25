@@ -58,7 +58,7 @@ def main() -> None:
         )
         client.run_forever()
     except (ValueError, RuntimeError) as error:
-        print(f"Startfehler: {error}", file=sys.stderr)
+        print(f"Startup error: {error}", file=sys.stderr)
         raise SystemExit(1) from error
 
 

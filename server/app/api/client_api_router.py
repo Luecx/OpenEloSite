@@ -5,6 +5,7 @@ from fastapi import Body
 from fastapi import Depends
 from fastapi import Header
 from fastapi import HTTPException
+from fastapi.responses import FileResponse
 from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
@@ -14,6 +15,7 @@ from app.db.repositories import engine_repository
 from app.db.repositories import token_repository
 from app.db.session import get_db
 from app.services import bench_service
+from app.services import client_bundle_service
 from app.services.client_task_service import get_client_task_worker
 
 
@@ -31,10 +33,14 @@ def get_api_user(authorization: str | None = Header(default=None), db: Session =
 
 
 def _register_or_update_client(payload: dict, db: Session, user):
+    client_bundle_hash = (payload.get("client_bundle_hash") or "").strip()
+    current_bundle = client_bundle_service.ensure_client_bundle()
+    if client_bundle_hash != current_bundle["hash"]:
+        raise HTTPException(status_code=409, detail="Client bundle is outdated")
     machine_fingerprint = (payload.get("machine_fingerprint") or payload.get("machine_key") or "").strip()
     machine_name = (payload.get("machine_name") or machine_fingerprint or "client").strip()
     if not machine_fingerprint:
-        raise HTTPException(status_code=400, detail="machine_fingerprint fehlt")
+        raise HTTPException(status_code=400, detail="machine_fingerprint is required")
     try:
         return client_repository.register_client_session(
             db=db,
@@ -63,13 +69,34 @@ def register_client(
     client = _register_or_update_client(payload, db, user)
     bench = bench_service.build_bench_payload(client.system_name, client.cpu_flags)
     if bench is None:
-        raise HTTPException(status_code=503, detail="Kein passendes Bench-Artifact fuer diesen Client gefunden")
+        raise HTTPException(status_code=503, detail="No compatible bench artifact was found for this client")
     return {
         "client_id": client.id,
         "heartbeat_interval_seconds": 15,
         "poll_interval_seconds": 5,
         "bench": bench,
     }
+
+
+@router.get("/bundle/meta")
+def client_bundle_meta(user=Depends(get_api_user)):
+    bundle = client_bundle_service.ensure_client_bundle()
+    return {
+        "hash": bundle["hash"],
+        "file_name": bundle["file_name"],
+        "built_at": bundle["built_at"],
+        "source": "/api/client/bundle/download",
+    }
+
+
+@router.get("/bundle/download")
+def download_client_bundle(user=Depends(get_api_user)):
+    bundle = client_bundle_service.ensure_client_bundle()
+    return FileResponse(
+        bundle["path"],
+        media_type="application/zip",
+        filename=bundle["file_name"],
+    )
 
 
 @router.post("/heartbeat")
@@ -80,7 +107,7 @@ def heartbeat(
 ):
     client_id = payload.get("client_id")
     if not client_id:
-        raise HTTPException(status_code=400, detail="client_id fehlt")
+        raise HTTPException(status_code=400, detail="client_id is required")
     client = client_repository.get_client_for_user(db, int(client_id), user.id)
     if client is None:
         raise HTTPException(status_code=404, detail="Client not found")

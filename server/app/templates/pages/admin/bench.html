@@ -7,22 +7,12 @@
     <div class="section-header">
       <div>
         <h1>{{ tr("Bench") }}</h1>
-        <p class="muted">{{ tr("Referenz-NPS und passende Bench-Artifacts fuer Clients verwalten.") }}</p>
+        <p class="muted">{{ tr("Manage bench artifacts and their reference speed for clients.") }}</p>
       </div>
     </div>
   </section>
 
-  <section class="section two-column">
-    <form class="form-card" method="post" action="/admin/bench/reference">
-      <h2>{{ tr("Bench-Referenz") }}</h2>
-      <label>
-        <span>{{ tr("Reference NPS") }}</span>
-        <input type="number" name="reference_nps" min="1" value="{{ reference_nps or '' }}" required />
-      </label>
-      <p class="muted">{{ tr("Dieser Wert ist die Referenz fuer den Speed-Faktor auf dem Client.") }}</p>
-      <button class="button" type="submit">{{ tr("Speichern") }}</button>
-    </form>
-
+  <section class="section">
     <form class="form-card" method="post" action="/admin/bench/artifacts" enctype="multipart/form-data">
       <h2>{{ tr("Bench-Artifact hochladen") }}</h2>
       <label>
@@ -32,6 +22,10 @@
           <option value="windows">Windows</option>
           <option value="darwin">Darwin</option>
         </select>
+      </label>
+      <label>
+        <span>{{ tr("Reference NPS") }}</span>
+        <input type="number" name="reference_nps" min="1" required />
       </label>
       <label><span>{{ tr("Datei") }}</span><input type="file" name="upload" required /></label>
       <fieldset class="checkbox-fieldset">
@@ -65,6 +59,10 @@
             <option value="darwin" {% if edit_artifact.system_name == 'darwin' %}selected{% endif %}>Darwin</option>
           </select>
         </label>
+        <label>
+          <span>{{ tr("Reference NPS") }}</span>
+          <input type="number" name="reference_nps" min="1" value="{{ edit_artifact.reference_nps or '' }}" required />
+        </label>
         <fieldset class="checkbox-fieldset">
           <legend>{{ tr("Benoetigte CPU-Flags") }}</legend>
           <label class="checkbox-row"><input type="checkbox" name="required_cpu_flags" value="sse4" {% if 'sse4' in edit_artifact.required_cpu_flags %}checked{% endif %} /> SSE4</label>
@@ -85,8 +83,10 @@
         <table>
           <thead>
             <tr>
+              <th>{{ tr("Prioritaet") }}</th>
               <th>{{ tr("Datei") }}</th>
               <th>{{ tr("System") }}</th>
+              <th>{{ tr("Reference NPS") }}</th>
               <th>{{ tr("CPU-Flags") }}</th>
               <th>{{ tr("Hash") }}</th>
               <th></th>
@@ -95,8 +95,22 @@
           <tbody>
             {% for artifact in bench_artifacts %}
               <tr>
+                <td>
+                  <div class="action-cluster priority-cluster">
+                    <span class="priority-value">{{ artifact.priority }}</span>
+                    <form method="post" action="/admin/bench/artifacts/{{ artifact.id }}/move" class="inline-form">
+                      <input type="hidden" name="direction" value="up" />
+                      <button class="icon-button" type="submit" title="{{ tr('Nach oben') }}" aria-label="{{ tr('Nach oben') }}" {% if loop.first %}disabled{% endif %}>{{ icon("chevron-up") }}</button>
+                    </form>
+                    <form method="post" action="/admin/bench/artifacts/{{ artifact.id }}/move" class="inline-form">
+                      <input type="hidden" name="direction" value="down" />
+                      <button class="icon-button" type="submit" title="{{ tr('Nach unten') }}" aria-label="{{ tr('Nach unten') }}" {% if loop.last %}disabled{% endif %}>{{ icon("chevron-down") }}</button>
+                    </form>
+                  </div>
+                </td>
                 <td>{{ artifact.file_name }}</td>
                 <td>{{ artifact.system_name }}</td>
+                <td>{{ artifact.reference_nps }}</td>
                 <td>{{ artifact.required_cpu_flags|join(", ") if artifact.required_cpu_flags else tr("keine") }}</td>
                 <td><code>{{ artifact.content_hash[:12] }}</code></td>
                 <td>
@@ -110,7 +124,7 @@
               </tr>
             {% else %}
               <tr>
-                <td colspan="5">{{ tr("Keine Bench-Artifacts vorhanden.") }}</td>
+                <td colspan="7">{{ tr("Keine Bench-Artifacts vorhanden.") }}</td>
               </tr>
             {% endfor %}
           </tbody>

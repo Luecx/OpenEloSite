@@ -41,7 +41,7 @@ def normalize_syzygy_probe_limit(value: int | str | None) -> int:
         value = int(raw)
     normalized = int(value)
     if normalized not in {SYZYGY_NONE, SYZYGY_345, SYZYGY_6, SYZYGY_7}:
-        raise ValueError("ungueltige Syzygy-Stufe")
+        raise ValueError("invalid Syzygy level")
     return normalized
 
 
@@ -71,11 +71,11 @@ class SyzygyLayout:
         if normalized == SYZYGY_NONE:
             return []
         if normalized == SYZYGY_345 and self.max_pieces < SYZYGY_345:
-            raise RuntimeError("Syzygy 3-4-5 wurde angefordert, ist aber auf diesem Client nicht verfuegbar.")
+            raise RuntimeError("Syzygy 3-4-5 was requested, but is not available on this client.")
         if normalized == SYZYGY_6 and self.max_pieces < SYZYGY_6:
-            raise RuntimeError("Syzygy 6 wurde angefordert, ist aber auf diesem Client nicht verfuegbar.")
+            raise RuntimeError("Syzygy 6 was requested, but is not available on this client.")
         if normalized == SYZYGY_7 and self.max_pieces < SYZYGY_7:
-            raise RuntimeError("Syzygy 7 wurde angefordert, ist aber auf diesem Client nicht verfuegbar.")
+            raise RuntimeError("Syzygy 7 was requested, but is not available on this client.")
 
         paths: set[Path] = set(self.paths_345)
         if normalized >= SYZYGY_6:
@@ -94,9 +94,9 @@ def inspect_syzygy_root(root: Path | None) -> SyzygyLayout:
 
     resolved_root = root.expanduser().resolve()
     if not resolved_root.exists():
-        raise ValueError(f"Syzygy root nicht gefunden: {resolved_root}")
+        raise ValueError(f"Syzygy root not found: {resolved_root}")
     if not resolved_root.is_dir():
-        raise ValueError(f"Syzygy root ist kein Verzeichnis: {resolved_root}")
+        raise ValueError(f"Syzygy root is not a directory: {resolved_root}")
 
     exact_group_paths: dict[int, set[Path]] = {
         SYZYGY_345: set(),

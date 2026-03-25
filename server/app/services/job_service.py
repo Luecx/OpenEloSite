@@ -144,7 +144,7 @@ def record_match_result(
     )
     if normalized_status == "completed":
         if not (pgn_zip_base64 or "").strip():
-            raise ValueError("Abgeschlossener Job hat keine PGN-ZIP geliefert.")
+            raise ValueError("A completed job did not provide a PGN ZIP.")
         completed.pgn_zip_path = job_pgn_service.store_job_pgn_zip(completed.id, pgn_zip_base64)
         db.add(completed)
         db.commit()

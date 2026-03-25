@@ -14,6 +14,7 @@ from app.db.base import Base
 from app.db.session import SessionLocal
 from app.db.session import engine
 from app.db import models  # noqa: F401
+from app.services.client_bundle_service import ensure_client_bundle
 from app.services.client_task_service import start_client_task_worker
 from app.services.client_task_service import stop_client_task_worker
 from app.services.leaderboard_service import LeaderboardRefreshThread
@@ -42,6 +43,7 @@ app.include_router(client_api_router)
 def startup() -> None:
     Base.metadata.create_all(bind=engine)
     ensure_schema(engine)
+    ensure_client_bundle()
     db = SessionLocal()
     try:
         ensure_roles(db)

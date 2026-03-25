@@ -4,7 +4,7 @@ from fastapi import Request
 
 
 SUPPORTED_LANGUAGES = {"de", "en"}
-DEFAULT_LANGUAGE = "de"
+DEFAULT_LANGUAGE = "en"
 
 
 _TRANSLATIONS = {
@@ -458,9 +458,16 @@ _TRANSLATIONS = {
         "en": "If you want to restrict testing to specific users, add them to this list, otherwise everyone will be able to test your engine.",
     },
     "Keine Einschraenkung": {"en": "Unrestricted"},
+    "Keine Einschraenkung aktiv": {"en": "No restriction active"},
+    "Tester": {"en": "Testers"},
+    "Oeffentliche Seite": {"en": "Public page"},
     "Tester hinzufuegen": {"en": "Add tester"},
     "Nutzer suchen": {"en": "Search user"},
     "Keine Nutzer gefunden.": {"en": "No users found."},
+    "Remis": {"en": "Draws"},
+    "Punkte": {"en": "Points"},
+    "Depth": {"en": "Depth"},
+    "NPS": {"en": "NPS"},
     "Zurueck zu Books": {"en": "Back to books"},
     "Zurueck zu Rating-Listen": {"en": "Back to rating lists"},
     "Book entfernen": {"en": "Remove book"},

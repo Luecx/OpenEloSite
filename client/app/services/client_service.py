@@ -9,6 +9,7 @@ from app.services.console_service import ClientConsole
 from app.services.fastchess_service import ensure_fastchess
 from app.services.hardware_service import collect_hardware_snapshot
 from app.services.job_runner import JobRunner
+from app.services.self_update_service import ensure_client_bundle_current
 from app.services.syzygy_service import inspect_syzygy_root
 from app.services.workspace_service import WorkspaceService
 
@@ -45,11 +46,14 @@ class ClientService:
         heartbeat_interval_override: int = 0,
     ):
         if max_threads <= 0:
-            raise ValueError("threads muss groesser als 0 sein")
+            raise ValueError("threads must be greater than 0")
         if max_hash <= 0:
-            raise ValueError("hash muss groesser als 0 sein")
+            raise ValueError("hash must be greater than 0")
 
+        self.console = ClientConsole()
+        self.console.banner("OpenELO Client")
         self.server = ServerClient(server_url, access_key)
+        self.client_bundle_hash = ensure_client_bundle_current(self.server, self.console)
         self.max_threads = int(max_threads)
         self.max_hash = int(max_hash)
         hardware = collect_hardware_snapshot()
@@ -66,8 +70,6 @@ class ClientService:
         self.cpu_name = str(hardware["cpu_name"] or "").strip() or "unknown cpu"
         self.ram_total_mb = max(0, int(hardware["ram_total_mb"] or 0))
         self.ram_speed_mt_s = int(hardware["ram_speed_mt_s"] or 0)
-        self.console = ClientConsole()
-        self.console.banner("OpenELO Client")
         self.workspace = WorkspaceService(workdir)
         self.syzygy = inspect_syzygy_root(syzygy_root)
 
@@ -91,6 +93,7 @@ class ClientService:
 
     def register(self) -> int:
         payload = {
+            "client_bundle_hash": self.client_bundle_hash,
             "machine_fingerprint": self.machine_fingerprint,
             "machine_name": self.machine_name,
             "system_name": self.system_name,
@@ -103,13 +106,19 @@ class ClientService:
             "ram_speed_mt_s": self.ram_speed_mt_s,
             "state": "idle",
         }
-        response = self.server.post("/api/client/register", payload)
+        try:
+            response = self.server.post("/api/client/register", payload)
+        except RuntimeError as error:
+            if "Client bundle is outdated" in str(error):
+                self.console.status("INIT", "Server reported an outdated client bundle. Updating ...")
+                self.client_bundle_hash = ensure_client_bundle_current(self.server, self.console)
+            raise
         self.client_id = int(response["client_id"])
         self.heartbeat_interval = self.heartbeat_interval_override or int(response.get("heartbeat_interval_seconds", 15) or 15)
         self.poll_interval = self.poll_interval_override or int(response.get("poll_interval_seconds", 5) or 5)
         bench = response.get("bench")
         if not isinstance(bench, dict):
-            raise RuntimeError("Server hat kein Bench-Artifact geliefert.")
+            raise RuntimeError("Server did not provide a bench artifact.")
         bench_path = self.workspace.refresh_bench_artifact(bench, self.server)
         self.runner.configure_bench(bench_path, int(bench.get("reference_nps", 0) or 0))
         self.state = "idle"
@@ -160,13 +169,13 @@ class ClientService:
 
     def request_next_job(self) -> dict | None:
         if self.client_id is None:
-            raise RuntimeError("Client ist nicht registriert.")
+            raise RuntimeError("Client is not registered.")
         response = self.server.post("/api/client/jobs/next", {"client_id": self.client_id})
         return response.get("job")
 
     def complete_job(self, job_id: str, payload: dict) -> None:
         if self.client_id is None:
-            raise RuntimeError("Client ist nicht registriert.")
+            raise RuntimeError("Client is not registered.")
         full_payload = dict(payload)
         full_payload["client_id"] = self.client_id
         self.server.post(f"/api/client/jobs/{job_id}/complete", full_payload)
