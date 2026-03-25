@@ -43,6 +43,14 @@ def _default_manifest() -> dict:
 
 def _normalize_manifest_priorities(manifest: dict) -> dict:
     raw_artifacts = [item for item in manifest.get("artifacts", []) if isinstance(item, dict)]
+    for index, entry in enumerate(raw_artifacts, start=1):
+        entry["priority"] = index
+    manifest["artifacts"] = raw_artifacts
+    return manifest
+
+
+def _sort_manifest_by_priority(manifest: dict) -> dict:
+    raw_artifacts = [item for item in manifest.get("artifacts", []) if isinstance(item, dict)]
     raw_artifacts.sort(key=lambda item: (int(item.get("priority") or 0), str(item.get("id") or item.get("path") or item.get("file_name") or "")))
     for index, entry in enumerate(raw_artifacts, start=1):
         entry["priority"] = index
@@ -59,7 +67,7 @@ def _load_manifest() -> dict:
         manifest = {
             "artifacts": [item for item in raw_data if isinstance(item, dict)],
         }
-        return _normalize_manifest_priorities(manifest)
+        return _sort_manifest_by_priority(manifest)
 
     if not isinstance(raw_data, dict):
         raise RuntimeError("Bench-Manifest muss ein Objekt sein.")
@@ -72,7 +80,7 @@ def _load_manifest() -> dict:
     manifest = {
         "artifacts": raw_artifacts,
     }
-    return _normalize_manifest_priorities(manifest)
+    return _sort_manifest_by_priority(manifest)
 
 
 def _save_manifest(manifest: dict) -> None:
