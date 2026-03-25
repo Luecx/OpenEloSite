@@ -1,0 +1,16 @@
+{% macro breadcrumb(items) %}
+<nav class="breadcrumb" aria-label="Breadcrumb">
+  <ol>
+    {% for item in items %}
+      <li>
+        {% if not loop.last %}
+          <a href="{{ item.href }}">{{ item.label }}</a>
+          <span class="breadcrumb-sep">/</span>
+        {% else %}
+          <span class="breadcrumb-current">{{ item.label }}</span>
+        {% endif %}
+      </li>
+    {% endfor %}
+  </ol>
+</nav>
+{% endmacro %}
