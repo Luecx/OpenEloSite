@@ -9,6 +9,7 @@ __pycache__/
 .DS_Store
 .env
 server/data/*
+!server/data/.gitkeep
 client/data/
 server/.coverage
 workdir/
