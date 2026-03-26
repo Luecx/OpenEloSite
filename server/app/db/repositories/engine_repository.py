@@ -13,6 +13,7 @@ from app.db.models.engine_artifact import EngineArtifact
 from app.db.models.engine_membership import EngineMembership
 from app.db.models.engine_tester import EngineTester
 from app.db.models.engine_version import EngineVersion
+from app.db.models.engine_version import compose_version_name
 from app.db.models.engine_version_rating_list import EngineVersionRatingList
 from app.db.models.leaderboard_entry import LeaderboardEntry
 from app.db.models.rating_list import RatingList
@@ -253,14 +254,55 @@ def allows_testing_user(engine: Engine | None, user_id: int | None) -> bool:
     return user_id in restricted_user_ids
 
 
+def _normalize_version_fields(
+    version_major: int,
+    version_minor: int | None = None,
+    version_patch: int | None = None,
+    version_additional: str | None = None,
+) -> tuple[int, int | None, int | None, str | None, str]:
+    major = int(version_major)
+    minor = int(version_minor) if version_minor is not None else None
+    patch = int(version_patch) if version_patch is not None else None
+    additional = (version_additional or "").strip() or None
+
+    if major < 0:
+        raise ValueError("Major version must be greater than or equal to 0.")
+    if minor is not None and minor < 0:
+        raise ValueError("Minor version must be greater than or equal to 0.")
+    if patch is not None and patch < 0:
+        raise ValueError("Patch version must be greater than or equal to 0.")
+    if patch is not None and minor is None:
+        raise ValueError("Minor version is required when patch is set.")
+
+    version_name = compose_version_name(major, minor, patch, additional)
+    return major, minor, patch, additional, version_name
+
+
+def _sorted_versions(versions: list[EngineVersion]) -> list[EngineVersion]:
+    return sorted(versions, key=lambda item: item.version_sort_key, reverse=True)
+
+
 def create_version(
     db: Session,
     engine: Engine,
-    version_name: str,
+    version_major: int,
+    version_minor: int | None = None,
+    version_patch: int | None = None,
+    version_additional: str | None = None,
 ) -> EngineVersion:
+    major, minor, patch, additional, version_name = _normalize_version_fields(
+        version_major,
+        version_minor,
+        version_patch,
+        version_additional,
+    )
     version = EngineVersion(
         engine_id=engine.id,
-        version_name=version_name.strip(),
+        version_name=version_name,
+        version_major=major,
+        version_minor=minor,
+        version_patch=patch,
+        version_additional=additional,
     )
     db.add(version)
     db.commit()
@@ -269,11 +311,12 @@ def create_version(
 
 
 def list_versions_for_engine(db: Session, engine_id: int) -> list[EngineVersion]:
-    return list(
-        db.scalars(
-            select(EngineVersion)
-            .where(EngineVersion.engine_id == engine_id)
-            .order_by(desc(EngineVersion.created_at))
+    return _sorted_versions(
+        list(
+            db.scalars(
+                select(EngineVersion)
+                .where(EngineVersion.engine_id == engine_id)
+            )
         )
     )
 
@@ -283,17 +326,23 @@ def list_public_versions_for_engine(db: Session, engine_id: int) -> list[EngineV
 
 
 def list_versions_for_picker(db: Session) -> list[EngineVersion]:
-    return list(
+    versions = list(
         db.scalars(
             select(EngineVersion)
             .join(Engine, Engine.id == EngineVersion.engine_id)
-            .order_by(Engine.name.asc(), EngineVersion.created_at.desc(), EngineVersion.id.desc())
         )
     )
+    versions_by_engine: dict[str, list[EngineVersion]] = defaultdict(list)
+    for version in versions:
+        versions_by_engine[version.engine.name.lower()].append(version)
+    ordered: list[EngineVersion] = []
+    for engine_name in sorted(versions_by_engine):
+        ordered.extend(_sorted_versions(versions_by_engine[engine_name]))
+    return ordered
 
 
 def list_matchmaker_versions(db: Session) -> list[EngineVersion]:
-    return [version for version in db.scalars(select(EngineVersion).order_by(desc(EngineVersion.created_at))) if version.artifacts]
+    return [version for version in _sorted_versions(list(db.scalars(select(EngineVersion)))) if version.artifacts]
 
 
 def get_version(db: Session, version_id: int) -> EngineVersion | None:
@@ -303,9 +352,22 @@ def get_version(db: Session, version_id: int) -> EngineVersion | None:
 def update_version(
     db: Session,
     version: EngineVersion,
-    version_name: str,
+    version_major: int,
+    version_minor: int | None = None,
+    version_patch: int | None = None,
+    version_additional: str | None = None,
 ) -> EngineVersion:
-    version.version_name = version_name.strip()
+    major, minor, patch, additional, version_name = _normalize_version_fields(
+        version_major,
+        version_minor,
+        version_patch,
+        version_additional,
+    )
+    version.version_name = version_name
+    version.version_major = major
+    version.version_minor = minor
+    version.version_patch = patch
+    version.version_additional = additional
     db.commit()
     db.refresh(version)
     return version
@@ -323,15 +385,21 @@ def list_rating_lists_for_version(db: Session, version_id: int) -> list[RatingLi
 
 
 def list_versions_for_rating_list(db: Session, rating_list_id: int) -> list[EngineVersion]:
-    return list(
+    versions = list(
         db.scalars(
             select(EngineVersion)
             .join(Engine, Engine.id == EngineVersion.engine_id)
             .join(EngineVersionRatingList, EngineVersionRatingList.engine_version_id == EngineVersion.id)
             .where(EngineVersionRatingList.rating_list_id == rating_list_id)
-            .order_by(Engine.name.asc(), EngineVersion.created_at.desc(), EngineVersion.id.desc())
         )
     )
+    versions_by_engine: dict[str, list[EngineVersion]] = defaultdict(list)
+    for version in versions:
+        versions_by_engine[version.engine.name.lower()].append(version)
+    ordered: list[EngineVersion] = []
+    for engine_name in sorted(versions_by_engine):
+        ordered.extend(_sorted_versions(versions_by_engine[engine_name]))
+    return ordered
 
 
 def set_rating_lists_for_version(db: Session, version: EngineVersion, rating_list_ids: list[int]) -> EngineVersion:

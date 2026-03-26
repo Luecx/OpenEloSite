@@ -70,7 +70,7 @@ def _games_novelty(games_count: int, scale: int = 32) -> float:
 def _normalized_freshness_by_version(versions: list) -> dict[int, float]:
     if not versions:
         return {}
-    ordered = sorted(versions, key=lambda item: (item.created_at, item.id), reverse=True)
+    ordered = sorted(versions, key=lambda item: item.version_sort_key, reverse=True)
     if len(ordered) == 1:
         return {ordered[0].id: 1.0}
     divisor = max(1, len(ordered) - 1)

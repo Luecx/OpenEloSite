@@ -61,10 +61,24 @@
         <summary class="button">{{ tr("Neue Version") }}</summary>
         <div class="inline-editor-panel versions-create-panel">
           <form class="compact-form" method="post" action="/owner/engines/{{ engine.id }}/versions">
-            <label>
-              <span>{{ tr("Versionsname") }}</span>
-              <input type="text" name="version_name" required />
-            </label>
+            <div class="detail-inline-grid">
+              <label>
+                <span>{{ tr("Major") }}</span>
+                <input type="number" name="version_major" min="0" required />
+              </label>
+              <label>
+                <span>{{ tr("Minor") }}</span>
+                <input type="number" name="version_minor" min="0" />
+              </label>
+              <label>
+                <span>{{ tr("Patch") }}</span>
+                <input type="number" name="version_patch" min="0" />
+              </label>
+              <label>
+                <span>{{ tr("Additional") }}</span>
+                <input type="text" name="version_additional" placeholder="rev2" />
+              </label>
+            </div>
             <div class="button-row">
               <button class="button" type="submit">{{ tr("Version anlegen") }}</button>
               <button class="ghost-button" type="button" data-close-inline-editor>{{ tr("Abbrechen") }}</button>

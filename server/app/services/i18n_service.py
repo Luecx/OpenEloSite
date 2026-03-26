@@ -328,6 +328,10 @@ _TRANSLATIONS = {
     "Engine speichern": {"en": "Save engine"},
     "Neue Version": {"en": "New version"},
     "Versionsname": {"en": "Version name"},
+    "Major": {"en": "Major"},
+    "Minor": {"en": "Minor"},
+    "Patch": {"en": "Patch"},
+    "Additional": {"en": "Additional"},
     "Version anlegen": {"en": "Create version"},
     "Jede Version enthaelt serverseitige Artifacts fuer verschiedene Systeme und CPU-Profile.": {
         "en": "Each version contains server-side artifacts for different systems and CPU profiles.",

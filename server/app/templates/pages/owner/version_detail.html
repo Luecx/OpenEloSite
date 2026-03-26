@@ -13,7 +13,16 @@
     <div class="two-column">
       <form class="form-card" method="post" action="/owner/versions/{{ version.id }}">
         <h2>{{ tr("Version bearbeiten") }}</h2>
-        <label><span>{{ tr("Versionsname") }}</span><input type="text" name="version_name" value="{{ version.version_name }}" required /></label>
+        {% set version_major = version.version_major if version.version_major is not none else version.effective_version_components[0] %}
+        {% set version_minor = version.version_minor if version.version_minor is not none else version.effective_version_components[1] %}
+        {% set version_patch = version.version_patch if version.version_patch is not none else version.effective_version_components[2] %}
+        {% set version_additional = version.version_additional if version.version_additional is not none else version.effective_version_components[3] %}
+        <div class="detail-inline-grid">
+          <label><span>{{ tr("Major") }}</span><input type="number" name="version_major" min="0" value="{{ version_major if version_major is not none else '' }}" required /></label>
+          <label><span>{{ tr("Minor") }}</span><input type="number" name="version_minor" min="0" value="{{ version_minor if version_minor is not none else '' }}" /></label>
+          <label><span>{{ tr("Patch") }}</span><input type="number" name="version_patch" min="0" value="{{ version_patch if version_patch is not none else '' }}" /></label>
+          <label><span>{{ tr("Additional") }}</span><input type="text" name="version_additional" value="{{ version_additional or '' }}" /></label>
+        </div>
         <button class="button" type="submit">{{ tr("Version speichern") }}</button>
       </form>
 

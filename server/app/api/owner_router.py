@@ -66,6 +66,26 @@ def _resolve_owner_users(db: Session, raw_value: str, fallback_user) -> list:
     return owners
 
 
+def _parse_required_int(raw_value: str, field_label: str) -> int:
+    value = (raw_value or "").strip()
+    if not value:
+        raise ValueError(f"{field_label} is required.")
+    try:
+        return int(value)
+    except ValueError as error:
+        raise ValueError(f"{field_label} must be an integer.") from error
+
+
+def _parse_optional_int(raw_value: str) -> int | None:
+    value = (raw_value or "").strip()
+    if not value:
+        return None
+    try:
+        return int(value)
+    except ValueError as error:
+        raise ValueError("Version components must be integers.") from error
+
+
 @router.get("/engines")
 def engines_page(request: Request, db: Session = Depends(get_db), current_user=Depends(get_current_user_required)):
     engines = _manageable_engines_for_user(db, current_user)
@@ -224,7 +244,10 @@ def remove_engine_tester(
 @router.post("/engines/{engine_id}/versions")
 def create_version(
     engine_id: int,
-    version_name: str = Form(...),
+    version_major: str = Form(...),
+    version_minor: str = Form(""),
+    version_patch: str = Form(""),
+    version_additional: str = Form(""),
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user_required),
 ):
@@ -232,11 +255,17 @@ def create_version(
     if engine is None:
         return redirect_to("/owner/engines", "Engine nicht gefunden.")
 
-    version = engine_repository.create_version(
-        db,
-        engine,
-        version_name,
-    )
+    try:
+        version = engine_repository.create_version(
+            db,
+            engine,
+            _parse_required_int(version_major, "Major version"),
+            _parse_optional_int(version_minor),
+            _parse_optional_int(version_patch),
+            version_additional,
+        )
+    except ValueError as error:
+        return redirect_to(f"/engines/{engine.slug}", str(error))
     audit_service.log_action(db, current_user.id, "version_create", "engine_version", str(version.id), "Version angelegt.")
     return redirect_to(f"/owner/versions/{version.id}", "Version angelegt.")
 
@@ -283,7 +312,10 @@ def version_detail(
 @router.post("/versions/{version_id}")
 def update_version(
     version_id: int,
-    version_name: str = Form(...),
+    version_major: str = Form(...),
+    version_minor: str = Form(""),
+    version_patch: str = Form(""),
+    version_additional: str = Form(""),
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user_required),
 ):
@@ -295,11 +327,17 @@ def update_version(
     if engine is None:
         return redirect_to("/owner/engines", "Kein Zugriff auf diese Version.")
 
-    engine_repository.update_version(
-        db,
-        version,
-        version_name,
-    )
+    try:
+        engine_repository.update_version(
+            db,
+            version,
+            _parse_required_int(version_major, "Major version"),
+            _parse_optional_int(version_minor),
+            _parse_optional_int(version_patch),
+            version_additional,
+        )
+    except ValueError as error:
+        return redirect_to(f"/owner/versions/{version.id}", str(error))
     audit_service.log_action(db, current_user.id, "version_update", "engine_version", str(version.id), "Version aktualisiert.")
     return redirect_to(f"/owner/versions/{version.id}", "Version gespeichert.")
 

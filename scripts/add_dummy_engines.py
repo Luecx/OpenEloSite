@@ -99,7 +99,7 @@ def main() -> None:
                 protocol="uci",
             )
             for version_index in range(1, args.versions + 1):
-                version = engine_repository.create_version(db, engine_record, f"v{version_index}")
+                version = engine_repository.create_version(db, engine_record, version_index, 0, 0, None)
                 create_dummy_artifact(db, version, "linux")
             created_engines.append(engine_record)
             next_index = index + 1
