@@ -195,9 +195,50 @@ def _ensure_additive_columns(engine: Engine, table_names: set[str]) -> None:
                 if "requires_pext" in columns:
                     connection.execute(text("UPDATE engine_artifacts SET requires_bmi2 = requires_pext WHERE requires_bmi2 IS NULL OR requires_bmi2 = 0"))
                 connection.execute(text("UPDATE engine_artifacts SET requires_bmi2 = 0 WHERE requires_bmi2 IS NULL"))
-            if "requires_vnni" not in columns:
-                connection.execute(text("ALTER TABLE engine_artifacts ADD COLUMN requires_vnni BOOLEAN DEFAULT 0"))
-                connection.execute(text("UPDATE engine_artifacts SET requires_vnni = 0 WHERE requires_vnni IS NULL"))
+            if "simd_class" not in columns:
+                connection.execute(text("ALTER TABLE engine_artifacts ADD COLUMN simd_class VARCHAR(20) DEFAULT 'sse'"))
+                simd_cases: list[str] = []
+                if "requires_avx512" in columns:
+                    simd_cases.append("WHEN COALESCE(requires_avx512, 0) = 1 THEN 'avx512'")
+                if "requires_avx2" in columns:
+                    simd_cases.append("WHEN COALESCE(requires_avx2, 0) = 1 THEN 'avx2'")
+                if "requires_avx" in columns:
+                    simd_cases.append("WHEN COALESCE(requires_avx, 0) = 1 THEN 'avx'")
+                if "requires_sse4" in columns:
+                    simd_cases.append("WHEN COALESCE(requires_sse4, 0) = 1 THEN 'sse42'")
+                if simd_cases:
+                    connection.execute(
+                        text(
+                            "UPDATE engine_artifacts "
+                            f"SET simd_class = CASE {' '.join(simd_cases)} ELSE 'sse' END "
+                            "WHERE simd_class IS NULL OR simd_class = ''"
+                        )
+                    )
+                else:
+                    connection.execute(text("UPDATE engine_artifacts SET simd_class = 'sse' WHERE simd_class IS NULL OR simd_class = ''"))
+            if "requires_avx512f" not in columns:
+                connection.execute(text("ALTER TABLE engine_artifacts ADD COLUMN requires_avx512f BOOLEAN DEFAULT 0"))
+                connection.execute(text("UPDATE engine_artifacts SET requires_avx512f = CASE WHEN simd_class = 'avx512' THEN 1 ELSE 0 END WHERE requires_avx512f IS NULL"))
+            if "requires_avx512bw" not in columns:
+                connection.execute(text("ALTER TABLE engine_artifacts ADD COLUMN requires_avx512bw BOOLEAN DEFAULT 0"))
+                connection.execute(text("UPDATE engine_artifacts SET requires_avx512bw = 0 WHERE requires_avx512bw IS NULL"))
+            if "requires_avx512dq" not in columns:
+                connection.execute(text("ALTER TABLE engine_artifacts ADD COLUMN requires_avx512dq BOOLEAN DEFAULT 0"))
+                connection.execute(text("UPDATE engine_artifacts SET requires_avx512dq = 0 WHERE requires_avx512dq IS NULL"))
+            if "requires_avx512vl" not in columns:
+                connection.execute(text("ALTER TABLE engine_artifacts ADD COLUMN requires_avx512vl BOOLEAN DEFAULT 0"))
+                connection.execute(text("UPDATE engine_artifacts SET requires_avx512vl = 0 WHERE requires_avx512vl IS NULL"))
+            if "requires_avx512vnni" not in columns:
+                connection.execute(text("ALTER TABLE engine_artifacts ADD COLUMN requires_avx512vnni BOOLEAN DEFAULT 0"))
+                if "requires_vnni" in columns:
+                    connection.execute(
+                        text(
+                            "UPDATE engine_artifacts "
+                            "SET requires_avx512vnni = CASE WHEN COALESCE(requires_vnni, 0) = 1 THEN 1 ELSE 0 END "
+                            "WHERE requires_avx512vnni IS NULL OR requires_avx512vnni = 0"
+                        )
+                    )
+                connection.execute(text("UPDATE engine_artifacts SET requires_avx512vnni = 0 WHERE requires_avx512vnni IS NULL"))
 
 
 def ensure_schema(engine: Engine) -> None:

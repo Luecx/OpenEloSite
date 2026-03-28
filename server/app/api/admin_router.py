@@ -16,6 +16,7 @@ from sqlalchemy.orm import Session
 from app.api.http import redirect_to
 from app.api.templates import templates
 from app.db.models.audit_log import AuditLog
+from app.db.models.engine_artifact import build_required_cpu_flags
 from app.db.repositories import catalog_repository
 from app.db.repositories import client_repository
 from app.db.repositories import job_repository
@@ -47,6 +48,24 @@ def _parse_optional_float(raw_value: str) -> float | None:
     if not value:
         return None
     return float(value)
+
+
+def _is_checked(raw_value: str | None) -> bool:
+    return raw_value is not None
+
+
+def _bench_required_flags_from_form(
+    simd_class: str,
+    requires_popcnt: str | None,
+    requires_bmi2: str | None,
+    required_avx512_flags: list[str],
+) -> list[str]:
+    return build_required_cpu_flags(
+        simd_class=simd_class,
+        requires_popcnt=_is_checked(requires_popcnt),
+        requires_bmi2=_is_checked(requires_bmi2),
+        required_avx512_flags=required_avx512_flags,
+    )
 
 
 @router.get("")
@@ -199,7 +218,10 @@ def bench_page(
 @router.post("/bench/artifacts")
 def create_bench_artifact(
     system_name: str = Form(...),
-    required_cpu_flags: list[str] = Form(default=[]),
+    simd_class: str = Form("sse"),
+    requires_popcnt: str | None = Form(None),
+    requires_bmi2: str | None = Form(None),
+    required_avx512_flags: list[str] = Form(default=[]),
     reference_nps: int = Form(...),
     upload: UploadFile = File(...),
     db: Session = Depends(get_db),
@@ -212,7 +234,12 @@ def create_bench_artifact(
         file_path=file_path,
         content_hash=content_hash,
         system_name=system_name,
-        required_cpu_flags=required_cpu_flags,
+        required_cpu_flags=_bench_required_flags_from_form(
+            simd_class,
+            requires_popcnt,
+            requires_bmi2,
+            required_avx512_flags,
+        ),
         reference_nps=reference_nps,
     )
     audit_service.log_action(db, current_user.id, "bench_artifact_create", "bench", artifact["id"], "Bench-Artifact hochgeladen.")
@@ -223,12 +250,25 @@ def create_bench_artifact(
 def update_bench_artifact(
     artifact_id: str,
     system_name: str = Form(...),
-    required_cpu_flags: list[str] = Form(default=[]),
+    simd_class: str = Form("sse"),
+    requires_popcnt: str | None = Form(None),
+    requires_bmi2: str | None = Form(None),
+    required_avx512_flags: list[str] = Form(default=[]),
     reference_nps: int = Form(...),
     db: Session = Depends(get_db),
     current_user=Depends(require_role(ADMIN_ROLE)),
 ):
-    artifact = bench_service.update_bench_artifact(artifact_id, system_name, required_cpu_flags, reference_nps)
+    artifact = bench_service.update_bench_artifact(
+        artifact_id,
+        system_name,
+        _bench_required_flags_from_form(
+            simd_class,
+            requires_popcnt,
+            requires_bmi2,
+            required_avx512_flags,
+        ),
+        reference_nps,
+    )
     if artifact is None:
         return redirect_to("/admin/bench", "Bench-Artifact nicht gefunden.")
     audit_service.log_action(db, current_user.id, "bench_artifact_update", "bench", artifact_id, "Bench-Artifact aktualisiert.")

@@ -8,7 +8,23 @@ import subprocess
 import uuid
 from pathlib import Path
 
-RELEVANT_CPU_FLAGS = ("sse4", "popcnt", "avx", "avx2", "bmi2", "avx512", "vnni")
+RELEVANT_CPU_FLAGS = (
+    "sse",
+    "sse2",
+    "sse3",
+    "ssse3",
+    "sse41",
+    "sse42",
+    "popcnt",
+    "avx",
+    "avx2",
+    "bmi2",
+    "avx512f",
+    "avx512bw",
+    "avx512dq",
+    "avx512vl",
+    "avx512vnni",
+)
 
 
 def _run_command(command: list[str]) -> str:
@@ -299,8 +315,18 @@ def collect_cpu_flags() -> list[str]:
         detected_tokens = {item.strip() for item in normalized.split() if item.strip()}
 
     relevant_flags: set[str] = set()
-    if {"sse4", "sse4_1", "sse4_2"} & detected_tokens:
-        relevant_flags.add("sse4")
+    if "sse" in detected_tokens:
+        relevant_flags.add("sse")
+    if "sse2" in detected_tokens:
+        relevant_flags.add("sse2")
+    if "pni" in detected_tokens or "sse3" in detected_tokens:
+        relevant_flags.add("sse3")
+    if "ssse3" in detected_tokens:
+        relevant_flags.add("ssse3")
+    if {"sse4_1", "sse4.1", "sse41"} & detected_tokens:
+        relevant_flags.add("sse41")
+    if {"sse4_2", "sse4.2", "sse42", "sse4"} & detected_tokens:
+        relevant_flags.add("sse42")
     if "popcnt" in detected_tokens:
         relevant_flags.add("popcnt")
     if "avx" in detected_tokens or "avx1.0" in detected_tokens:
@@ -309,10 +335,34 @@ def collect_cpu_flags() -> list[str]:
         relevant_flags.add("avx2")
     if "pext" in detected_tokens or "bmi2" in detected_tokens:
         relevant_flags.add("bmi2")
-    if any(token.startswith("avx512") for token in detected_tokens):
-        relevant_flags.add("avx512")
-    if {"avxvnni", "avx_vnni", "vnni"} & detected_tokens:
-        relevant_flags.add("vnni")
+    if "avx512f" in detected_tokens or "avx512" in detected_tokens:
+        relevant_flags.add("avx512f")
+    if "avx512bw" in detected_tokens:
+        relevant_flags.add("avx512bw")
+    if "avx512dq" in detected_tokens:
+        relevant_flags.add("avx512dq")
+    if "avx512vl" in detected_tokens:
+        relevant_flags.add("avx512vl")
+    if {"avx512vnni", "avx512_vnni", "vnni"} & detected_tokens:
+        relevant_flags.add("avx512vnni")
+
+    if "avx512f" in relevant_flags:
+        relevant_flags.update({"avx", "avx2", "sse", "sse2", "sse3", "ssse3", "sse41", "sse42"})
+    elif "avx2" in relevant_flags:
+        relevant_flags.update({"avx", "sse", "sse2", "sse3", "ssse3", "sse41", "sse42"})
+    elif "avx" in relevant_flags:
+        relevant_flags.update({"sse", "sse2", "sse3", "ssse3", "sse41", "sse42"})
+    elif "sse42" in relevant_flags:
+        relevant_flags.update({"sse", "sse2", "sse3", "ssse3", "sse41"})
+    elif "sse41" in relevant_flags:
+        relevant_flags.update({"sse", "sse2", "sse3", "ssse3"})
+    elif "ssse3" in relevant_flags:
+        relevant_flags.update({"sse", "sse2", "sse3"})
+    elif "sse3" in relevant_flags:
+        relevant_flags.update({"sse", "sse2"})
+    elif "sse2" in relevant_flags:
+        relevant_flags.add("sse")
+
     return [flag for flag in RELEVANT_CPU_FLAGS if flag in relevant_flags]
 
 

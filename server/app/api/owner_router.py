@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session
 
 from app.api.http import redirect_to
 from app.api.templates import templates
+from app.db.models.engine_artifact import build_required_cpu_flags
 from app.db.repositories import catalog_repository
 from app.db.repositories import engine_repository
 from app.db.repositories import job_repository
@@ -67,6 +68,24 @@ def _parse_optional_int(raw_value: str) -> int | None:
         return int(value)
     except ValueError as error:
         raise ValueError("Version components must be integers.") from error
+
+
+def _is_checked(raw_value: str | None) -> bool:
+    return raw_value is not None
+
+
+def _artifact_required_flags_from_form(
+    simd_class: str,
+    requires_popcnt: str | None,
+    requires_bmi2: str | None,
+    required_avx512_flags: list[str],
+) -> list[str]:
+    return build_required_cpu_flags(
+        simd_class=simd_class,
+        requires_popcnt=_is_checked(requires_popcnt),
+        requires_bmi2=_is_checked(requires_bmi2),
+        required_avx512_flags=required_avx512_flags,
+    )
 
 
 @router.get("/engines")
@@ -347,7 +366,10 @@ def update_version_rating_lists(
 def create_artifact(
     version_id: int,
     system_name: str = Form(...),
-    required_cpu_flags: list[str] = Form(default=[]),
+    simd_class: str = Form("sse"),
+    requires_popcnt: str | None = Form(None),
+    requires_bmi2: str | None = Form(None),
+    required_avx512_flags: list[str] = Form(default=[]),
     upload: UploadFile = File(...),
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user_required),
@@ -369,7 +391,12 @@ def create_artifact(
         file_name=file_name,
         file_path=file_path,
         content_hash=content_hash,
-        required_cpu_flags=required_cpu_flags,
+        required_cpu_flags=_artifact_required_flags_from_form(
+            simd_class,
+            requires_popcnt,
+            requires_bmi2,
+            required_avx512_flags,
+        ),
     )
     audit_service.log_action(db, current_user.id, "artifact_create", "engine_artifact", str(artifact.id), "Artifact hochgeladen.")
     return redirect_to(f"/owner/versions/{version.id}", "Artifact hochgeladen.")
@@ -407,7 +434,10 @@ def artifact_detail(
 def update_artifact(
     artifact_id: int,
     system_name: str = Form(...),
-    required_cpu_flags: list[str] = Form(default=[]),
+    simd_class: str = Form("sse"),
+    requires_popcnt: str | None = Form(None),
+    requires_bmi2: str | None = Form(None),
+    required_avx512_flags: list[str] = Form(default=[]),
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user_required),
 ):
@@ -421,7 +451,17 @@ def update_artifact(
     if engine is None:
         return redirect_to("/owner/engines", "Kein Zugriff auf dieses Artifact.")
 
-    engine_repository.update_artifact(db, artifact, system_name, required_cpu_flags)
+    engine_repository.update_artifact(
+        db,
+        artifact,
+        system_name,
+        _artifact_required_flags_from_form(
+            simd_class,
+            requires_popcnt,
+            requires_bmi2,
+            required_avx512_flags,
+        ),
+    )
     audit_service.log_action(db, current_user.id, "artifact_update", "engine_artifact", str(artifact.id), "Artifact aktualisiert.")
     return redirect_to(f"/owner/versions/{version.id}", "Artifact gespeichert.")
 

@@ -20,25 +20,6 @@ from app.services import matchmaker_service
 from app.services.syzygy_service import syzygy_label
 
 
-def _required_flag_keys(artifact) -> list[str]:
-    flags: list[str] = []
-    if artifact.requires_sse4:
-        flags.append("sse4")
-    if artifact.requires_popcnt:
-        flags.append("popcnt")
-    if artifact.requires_avx:
-        flags.append("avx")
-    if artifact.requires_avx2:
-        flags.append("avx2")
-    if artifact.requires_bmi2:
-        flags.append("bmi2")
-    if artifact.requires_avx512:
-        flags.append("avx512")
-    if artifact.requires_vnni:
-        flags.append("vnni")
-    return flags
-
-
 def _build_job_payload(db, client, assignment) -> dict:
     engine_1_version = db.get(EngineVersion, assignment.engine_version_id)
     engine_2_version = db.get(EngineVersion, assignment.opponent_version_id)
@@ -50,10 +31,15 @@ def _build_job_payload(db, client, assignment) -> dict:
     if book is not None:
         book = catalog_repository.ensure_book_hash(db, book)
 
-    engine_1_artifact = engine_repository.pick_compatible_artifact(engine_1_version, client.system_name, client.cpu_flags)
-    engine_2_artifact = engine_repository.pick_compatible_artifact(engine_2_version, client.system_name, client.cpu_flags)
-    if engine_1_artifact is None or engine_2_artifact is None:
-        raise HTTPException(status_code=500, detail="No compatible artifact was found for the client")
+    artifact_pair = engine_repository.pick_fair_artifact_pair(
+        engine_1_version,
+        engine_2_version,
+        client.system_name,
+        client.cpu_flags,
+    )
+    if artifact_pair is None:
+        raise HTTPException(status_code=500, detail="No fair artifact pair was found for the client")
+    engine_1_artifact, engine_2_artifact = artifact_pair
 
     return {
         "job_id": assignment.id,
@@ -76,7 +62,7 @@ def _build_job_payload(db, client, assignment) -> dict:
                 "file_name": engine_1_artifact.file_name,
                 "hash": engine_1_artifact.content_hash,
                 "system_name": engine_1_artifact.system_name,
-                "required_cpu_flags": _required_flag_keys(engine_1_artifact),
+                "required_cpu_flags": engine_1_artifact.required_cpu_flags,
                 "source": f"/api/client/artifacts/{engine_1_artifact.id}",
             },
         },
@@ -89,7 +75,7 @@ def _build_job_payload(db, client, assignment) -> dict:
                 "file_name": engine_2_artifact.file_name,
                 "hash": engine_2_artifact.content_hash,
                 "system_name": engine_2_artifact.system_name,
-                "required_cpu_flags": _required_flag_keys(engine_2_artifact),
+                "required_cpu_flags": engine_2_artifact.required_cpu_flags,
                 "source": f"/api/client/artifacts/{engine_2_artifact.id}",
             },
         },

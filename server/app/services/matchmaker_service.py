@@ -167,6 +167,13 @@ def _log_no_candidate_debug(db: Session, client: Client, state: dict) -> None:
         allowed_rating_lists = state["allowed_rating_lists_by_version"].get(version.id, set())
         if not allowed_rating_lists:
             reasons.append("no compatible rating list")
+        elif not any(
+            other.id != version.id
+            and _version_pair_key(version.id, other.id) in state["fair_artifact_pairs"]
+            and bool(allowed_rating_lists & state["allowed_rating_lists_by_version"].get(other.id, set()))
+            for other in state["versions"]
+        ):
+            reasons.append("no fair artifact pair")
         if reasons:
             logger.info(
                 "[matchmaker] rejected version %s: %s",
@@ -179,6 +186,8 @@ def _log_no_candidate_debug(db: Session, client: Client, state: dict) -> None:
     allowed_by_version = state["allowed_rating_lists_by_version"]
     for first_index, first_version in enumerate(versions):
         for second_version in versions[first_index + 1:]:
+            if _version_pair_key(first_version.id, second_version.id) not in state["fair_artifact_pairs"]:
+                continue
             shared_rating_list_ids = allowed_by_version[first_version.id] & allowed_by_version[second_version.id]
             for rating_list_id in shared_rating_list_ids:
                 possible_selections += 1
@@ -195,6 +204,7 @@ def _build_matchmaker_state(db: Session, client: Client) -> dict:
             "rating_lists": [],
             "versions": [],
             "allowed_rating_lists_by_version": {},
+            "fair_artifact_pairs": {},
             "freshness": {},
             "novelty": {},
             "average_rating": {},
@@ -222,12 +232,25 @@ def _build_matchmaker_state(db: Session, client: Client) -> dict:
         versions.append(version)
         allowed_rating_lists_by_version[version.id] = allowed_ids
 
+    fair_artifact_pairs: dict[tuple[int, int], tuple] = {}
+    for first_index, first_version in enumerate(versions):
+        for second_version in versions[first_index + 1:]:
+            artifact_pair = engine_repository.pick_fair_artifact_pair(
+                first_version,
+                second_version,
+                client.system_name,
+                client.cpu_flags,
+            )
+            if artifact_pair is not None:
+                fair_artifact_pairs[_version_pair_key(first_version.id, second_version.id)] = artifact_pair
+
     version_ids = [item.id for item in versions]
     if len(version_ids) < 2:
         return {
             "rating_lists": rating_lists,
             "versions": versions,
             "allowed_rating_lists_by_version": allowed_rating_lists_by_version,
+            "fair_artifact_pairs": fair_artifact_pairs,
             "freshness": _normalized_freshness_by_version(versions),
             "novelty": {item.id: 1.0 for item in versions},
             "average_rating": {item.id: DEFAULT_RATING for item in versions},
@@ -282,6 +305,7 @@ def _build_matchmaker_state(db: Session, client: Client) -> dict:
         "rating_lists": rating_lists,
         "versions": versions,
         "allowed_rating_lists_by_version": allowed_rating_lists_by_version,
+        "fair_artifact_pairs": fair_artifact_pairs,
         "freshness": _normalized_freshness_by_version(versions),
         "novelty": novelty,
         "average_rating": average_rating,
@@ -294,10 +318,12 @@ def _build_matchmaker_state(db: Session, client: Client) -> dict:
 def _first_engine_candidates(state: dict) -> list:
     versions = state["versions"]
     allowed_rating_lists_by_version = state["allowed_rating_lists_by_version"]
+    fair_artifact_pairs = state["fair_artifact_pairs"]
     result = []
     for version in versions:
         has_opponent = any(
             other.id != version.id
+            and _version_pair_key(version.id, other.id) in fair_artifact_pairs
             and bool(allowed_rating_lists_by_version[version.id] & allowed_rating_lists_by_version[other.id])
             for other in versions
         )
@@ -333,6 +359,8 @@ def _second_engine_candidates(first_version, state: dict) -> list[tuple]:
     allowed_rating_lists_by_version = state["allowed_rating_lists_by_version"]
     for version in state["versions"]:
         if version.id == first_version.id:
+            continue
+        if _version_pair_key(first_version.id, version.id) not in state["fair_artifact_pairs"]:
             continue
         shared_rating_list_ids = allowed_rating_lists_by_version[first_version.id] & allowed_rating_lists_by_version[version.id]
         if not shared_rating_list_ids:

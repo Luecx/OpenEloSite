@@ -156,13 +156,21 @@ class ClientService:
 
     def _format_cpu_flags(self) -> str:
         label_map = {
-            "sse4": "SSE4",
+            "sse": "SSE",
+            "sse2": "SSE2",
+            "sse3": "SSE3",
+            "ssse3": "SSSE3",
+            "sse41": "SSE4.1",
+            "sse42": "SSE4.2",
             "popcnt": "POPCNT",
             "avx": "AVX",
             "avx2": "AVX2",
             "bmi2": "BMI2",
-            "avx512": "AVX-512",
-            "vnni": "VNNI",
+            "avx512f": "AVX512-F",
+            "avx512bw": "AVX512-BW",
+            "avx512dq": "AVX512-DQ",
+            "avx512vl": "AVX512-VL",
+            "avx512vnni": "AVX512-VNNI",
         }
         ordered_flags = [flag for flag in RELEVANT_CPU_FLAGS if flag in self.cpu_flags]
         if not ordered_flags:

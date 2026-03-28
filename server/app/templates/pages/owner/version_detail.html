@@ -63,16 +63,38 @@
                 </select>
               </label>
               <label><span>{{ tr("Datei") }}</span><input type="file" name="upload" required /></label>
-              <fieldset class="checkbox-fieldset">
-                <legend>{{ tr("Benoetigte CPU-Flags") }}</legend>
-                <label class="checkbox-row"><input type="checkbox" name="required_cpu_flags" value="sse4" /> SSE4</label>
-                <label class="checkbox-row"><input type="checkbox" name="required_cpu_flags" value="popcnt" /> POPCNT</label>
-                <label class="checkbox-row"><input type="checkbox" name="required_cpu_flags" value="avx" /> AVX</label>
-                <label class="checkbox-row"><input type="checkbox" name="required_cpu_flags" value="avx2" /> AVX2</label>
-                <label class="checkbox-row"><input type="checkbox" name="required_cpu_flags" value="bmi2" /> BMI2</label>
-                <label class="checkbox-row"><input type="checkbox" name="required_cpu_flags" value="avx512" /> AVX-512</label>
-                <label class="checkbox-row"><input type="checkbox" name="required_cpu_flags" value="vnni" /> VNNI</label>
-              </fieldset>
+              <div class="stack">
+                <span class="field-label">{{ tr("Flags") }}</span>
+                <div class="artifact-flags-grid">
+                  <fieldset class="checkbox-fieldset">
+                    <legend>{{ tr("Standard flags") }}</legend>
+                    <label class="checkbox-row"><input type="checkbox" name="requires_popcnt" value="1" /> POPCNT</label>
+                    <label class="checkbox-row"><input type="checkbox" name="requires_bmi2" value="1" /> BMI2</label>
+                  </fieldset>
+                  <div class="artifact-simd-stack">
+                    <fieldset class="checkbox-fieldset">
+                      <legend>{{ tr("SIMD class") }}</legend>
+                      <label class="checkbox-row"><input type="radio" name="simd_class" value="sse" data-simd-class-input checked /> SSE</label>
+                      <label class="checkbox-row"><input type="radio" name="simd_class" value="sse2" data-simd-class-input /> SSE2</label>
+                      <label class="checkbox-row"><input type="radio" name="simd_class" value="sse3" data-simd-class-input /> SSE3</label>
+                      <label class="checkbox-row"><input type="radio" name="simd_class" value="ssse3" data-simd-class-input /> SSSE3</label>
+                      <label class="checkbox-row"><input type="radio" name="simd_class" value="sse41" data-simd-class-input /> SSE4.1</label>
+                      <label class="checkbox-row"><input type="radio" name="simd_class" value="sse42" data-simd-class-input /> SSE4.2</label>
+                      <label class="checkbox-row"><input type="radio" name="simd_class" value="avx" data-simd-class-input /> AVX</label>
+                      <label class="checkbox-row"><input type="radio" name="simd_class" value="avx2" data-simd-class-input /> AVX2</label>
+                      <label class="checkbox-row"><input type="radio" name="simd_class" value="avx512" data-simd-class-input /> AVX512</label>
+                      <div class="simd-avx512-options" data-avx512-options>
+                        <span class="simd-avx512-label">{{ tr("AVX512 extra flags") }}</span>
+                        <label class="checkbox-row"><input type="checkbox" checked disabled /> F</label>
+                        <label class="checkbox-row"><input type="checkbox" name="required_avx512_flags" value="bw" /> BW</label>
+                        <label class="checkbox-row"><input type="checkbox" name="required_avx512_flags" value="dq" /> DQ</label>
+                        <label class="checkbox-row"><input type="checkbox" name="required_avx512_flags" value="vl" /> VL</label>
+                        <label class="checkbox-row"><input type="checkbox" name="required_avx512_flags" value="vnni" /> VNNI</label>
+                      </div>
+                    </fieldset>
+                  </div>
+                </div>
+              </div>
               <div class="button-row">
                 <button class="button" type="submit">{{ tr("Artifact hochladen") }}</button>
                 <button class="ghost-button" type="button" data-close-inline-editor>{{ tr("Abbrechen") }}</button>

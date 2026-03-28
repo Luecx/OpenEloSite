@@ -306,6 +306,32 @@
               closeEditor(details);
             });
         });
+
+        function syncAvx512Options(scope) {
+          var selected = scope.querySelector("[data-simd-class-input]:checked");
+          var show = !!selected && selected.value === "avx512";
+          scope.querySelectorAll("[data-avx512-options]").forEach(function (panel) {
+            panel.classList.toggle("is-visible", show);
+            panel.querySelectorAll("input[name='required_avx512_flags']").forEach(function (input) {
+              input.disabled = !show;
+              if (!show) {
+                input.checked = false;
+              }
+            });
+          });
+        }
+
+        document.querySelectorAll("form").forEach(function (form) {
+          if (!form.querySelector("[data-simd-class-input]")) {
+            return;
+          }
+          syncAvx512Options(form);
+          form.addEventListener("change", function (event) {
+            if (event.target && event.target.matches("[data-simd-class-input]")) {
+              syncAvx512Options(form);
+            }
+          });
+        });
       })();
     </script>
     {% block scripts %}{% endblock %}

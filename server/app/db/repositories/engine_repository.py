@@ -10,6 +10,10 @@ from sqlalchemy.orm import Session
 
 from app.db.models.engine import Engine
 from app.db.models.engine_artifact import EngineArtifact
+from app.db.models.engine_artifact import AVX512_FLAG_ORDER
+from app.db.models.engine_artifact import fairness_strength_key
+from app.db.models.engine_artifact import infer_simd_class_from_flags
+from app.db.models.engine_artifact import normalize_avx512_requirement_flags
 from app.db.models.engine_membership import EngineMembership
 from app.db.models.engine_tester import EngineTester
 from app.db.models.engine_version import EngineVersion
@@ -113,32 +117,76 @@ def _normalize_targets(values: list[str]) -> set[str]:
 
 def _apply_required_cpu_flags(record: EngineArtifact, required_cpu_flags: list[str]) -> None:
     flag_values = _normalize_targets(required_cpu_flags)
-    record.requires_sse4 = "sse4" in flag_values
+    record.simd_class = infer_simd_class_from_flags(flag_values)
     record.requires_popcnt = "popcnt" in flag_values
-    record.requires_avx = "avx" in flag_values
-    record.requires_avx2 = "avx2" in flag_values
     record.requires_bmi2 = "bmi2" in flag_values
-    record.requires_avx512 = "avx512" in flag_values
-    record.requires_vnni = "vnni" in flag_values
+    normalized_avx512_flags = normalize_avx512_requirement_flags(flag_values) if record.simd_class == "avx512" else []
+    record.requires_avx512f = record.simd_class == "avx512"
+    record.requires_avx512bw = "avx512bw" in normalized_avx512_flags
+    record.requires_avx512dq = "avx512dq" in normalized_avx512_flags
+    record.requires_avx512vl = "avx512vl" in normalized_avx512_flags
+    record.requires_avx512vnni = "avx512vnni" in normalized_avx512_flags
 
 
 def _artifact_required_flags(artifact: EngineArtifact) -> set[str]:
-    required: set[str] = set()
-    if artifact.requires_sse4:
-        required.add("sse4")
-    if artifact.requires_popcnt:
-        required.add("popcnt")
-    if artifact.requires_avx:
-        required.add("avx")
-    if artifact.requires_avx2:
-        required.add("avx2")
-    if artifact.requires_bmi2:
-        required.add("bmi2")
-    if artifact.requires_avx512:
-        required.add("avx512")
-    if artifact.requires_vnni:
-        required.add("vnni")
-    return required
+    return set(artifact.required_cpu_flags)
+
+
+def _artifact_matches_client(
+    artifact: EngineArtifact,
+    system_name: str,
+    client_flags: set[str],
+) -> bool:
+    if artifact.system_name.strip().lower() != (system_name or "").strip().lower():
+        return False
+    return _artifact_required_flags(artifact).issubset(client_flags)
+
+
+def list_compatible_artifacts(
+    version: EngineVersion | None,
+    system_name: str,
+    cpu_flags: list[str] | str | set[str] | None,
+) -> list[EngineArtifact]:
+    if version is None:
+        return []
+
+    normalized_flags = (
+        cpu_flags if isinstance(cpu_flags, str) else client_repository.serialize_cpu_flags(cpu_flags)
+    )
+    client_flags = client_repository.parse_cpu_flags(normalized_flags)
+    ordered_artifacts = sorted(version.artifacts, key=lambda item: (item.priority, item.id))
+    return [
+        artifact
+        for artifact in ordered_artifacts
+        if _artifact_matches_client(artifact, system_name, client_flags)
+    ]
+
+
+def pick_fair_artifact_pair(
+    first_version: EngineVersion | None,
+    second_version: EngineVersion | None,
+    system_name: str,
+    cpu_flags: list[str] | str | set[str] | None,
+) -> tuple[EngineArtifact, EngineArtifact] | None:
+    compatible_first = list_compatible_artifacts(first_version, system_name, cpu_flags)
+    compatible_second = list_compatible_artifacts(second_version, system_name, cpu_flags)
+    if not compatible_first or not compatible_second:
+        return None
+
+    first_by_key: dict[tuple, list[EngineArtifact]] = defaultdict(list)
+    for artifact in compatible_first:
+        first_by_key[artifact.fairness_key].append(artifact)
+
+    second_by_key: dict[tuple, list[EngineArtifact]] = defaultdict(list)
+    for artifact in compatible_second:
+        second_by_key[artifact.fairness_key].append(artifact)
+
+    shared_keys = set(first_by_key) & set(second_by_key)
+    if not shared_keys:
+        return None
+
+    best_key = max(shared_keys, key=fairness_strength_key)
+    return first_by_key[best_key][0], second_by_key[best_key][0]
 
 
 def list_engine_owners(db: Session, engine_id: int) -> list[User]:
@@ -520,20 +568,8 @@ def delete_artifact(db: Session, artifact: EngineArtifact) -> None:
 
 
 def pick_compatible_artifact(version: EngineVersion | None, system_name: str, cpu_flags: list[str] | str | set[str] | None) -> EngineArtifact | None:
-    if version is None:
-        return None
-
-    normalized_system = (system_name or "").strip().lower()
-    client_flags = client_repository.parse_cpu_flags(cpu_flags if isinstance(cpu_flags, str) else client_repository.serialize_cpu_flags(cpu_flags))
-    ordered_artifacts = sorted(version.artifacts, key=lambda item: (item.priority, item.id))
-    for artifact in ordered_artifacts:
-        if artifact.system_name.strip().lower() != normalized_system:
-            continue
-        required_flags = _artifact_required_flags(artifact)
-        if not required_flags.issubset(client_flags):
-            continue
-        return artifact
-    return None
+    compatible = list_compatible_artifacts(version, system_name, cpu_flags)
+    return compatible[0] if compatible else None
 
 
 def move_artifact_priority(db: Session, artifact: EngineArtifact, direction: str) -> EngineArtifact:

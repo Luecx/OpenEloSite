@@ -13,9 +13,37 @@ from app.services.syzygy_service import normalize_syzygy_probe_limit
 
 
 ACTIVE_CLIENT_TTL_SECONDS = 120
-RELEVANT_CPU_FLAGS = ("sse4", "popcnt", "avx", "avx2", "bmi2", "avx512", "vnni")
+RELEVANT_CPU_FLAGS = (
+    "sse",
+    "sse2",
+    "sse3",
+    "ssse3",
+    "sse41",
+    "sse42",
+    "popcnt",
+    "avx",
+    "avx2",
+    "bmi2",
+    "avx512f",
+    "avx512bw",
+    "avx512dq",
+    "avx512vl",
+    "avx512vnni",
+)
 CPU_FLAG_ALIASES = {
     "pext": "bmi2",
+    "avx512": "avx512f",
+    "sse4": "sse42",
+    "sse4.1": "sse41",
+    "sse4_1": "sse41",
+    "sse4.2": "sse42",
+    "sse4_2": "sse42",
+    "f": "avx512f",
+    "bw": "avx512bw",
+    "dq": "avx512dq",
+    "vl": "avx512vl",
+    "vnni": "avx512vnni",
+    "avx512_vnni": "avx512vnni",
 }
 
 
@@ -36,6 +64,22 @@ def normalize_cpu_flags(values: list[str] | tuple[str, ...] | set[str] | str | N
         for item in raw_values
         if item and item.strip() and CPU_FLAG_ALIASES.get(item.strip().lower(), item.strip().lower()) in allowed
     }
+    if "avx512f" in normalized:
+        normalized.update({"avx", "avx2", "sse", "sse2", "sse3", "ssse3", "sse41", "sse42"})
+    elif "avx2" in normalized:
+        normalized.update({"avx", "sse", "sse2", "sse3", "ssse3", "sse41", "sse42"})
+    elif "avx" in normalized:
+        normalized.update({"sse", "sse2", "sse3", "ssse3", "sse41", "sse42"})
+    elif "sse42" in normalized:
+        normalized.update({"sse", "sse2", "sse3", "ssse3", "sse41"})
+    elif "sse41" in normalized:
+        normalized.update({"sse", "sse2", "sse3", "ssse3"})
+    elif "ssse3" in normalized:
+        normalized.update({"sse", "sse2", "sse3"})
+    elif "sse3" in normalized:
+        normalized.update({"sse", "sse2"})
+    elif "sse2" in normalized:
+        normalized.add("sse")
     return [flag for flag in RELEVANT_CPU_FLAGS if flag in normalized]
 
 

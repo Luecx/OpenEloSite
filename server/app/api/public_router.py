@@ -337,13 +337,21 @@ def client_detail_page(client_id: int, request: Request, db: Session = Depends(g
     if client is None:
         raise HTTPException(status_code=404, detail="Client not found")
     client_flag_rows = [
-        ("SSE4", "sse4"),
+        ("SSE", "sse"),
+        ("SSE2", "sse2"),
+        ("SSE3", "sse3"),
+        ("SSSE3", "ssse3"),
+        ("SSE4.1", "sse41"),
+        ("SSE4.2", "sse42"),
         ("POPCNT", "popcnt"),
         ("AVX", "avx"),
         ("AVX2", "avx2"),
         ("BMI2", "bmi2"),
-        ("AVX-512", "avx512"),
-        ("VNNI", "vnni"),
+        ("AVX512-F", "avx512f"),
+        ("AVX512-BW", "avx512bw"),
+        ("AVX512-DQ", "avx512dq"),
+        ("AVX512-VL", "avx512vl"),
+        ("AVX512-VNNI", "avx512vnni"),
     ]
     context = build_context(
         request,

@@ -863,18 +863,63 @@ textarea {
 
 .checkbox-fieldset {
   margin: 0;
-  padding: 14px;
+  padding: 12px 14px 14px;
   border: 1px solid var(--line);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-sm);
   display: grid;
-  gap: 10px;
-  background: color-mix(in srgb, var(--surface) 92%, white 8%);
+  gap: 8px;
+  align-content: start;
+  align-items: start;
+  background: var(--input-bg);
 }
 
 .checkbox-fieldset legend {
-  padding: 0 6px;
+  padding: 0;
   color: var(--muted);
   font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.field-label {
+  color: var(--muted);
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.artifact-flags-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  align-items: start;
+}
+
+.artifact-flags-grid > *,
+.artifact-simd-stack > * {
+  align-self: start;
+}
+
+.artifact-simd-stack {
+  display: grid;
+  gap: 14px;
+  align-content: start;
+}
+
+.simd-avx512-options {
+  display: none;
+  gap: 8px;
+  margin-left: 28px;
+  padding-left: 14px;
+  border-left: 2px solid var(--line);
+}
+
+.simd-avx512-options.is-visible {
+  display: grid;
+}
+
+.simd-avx512-label {
+  color: var(--muted);
+  font-size: 0.9rem;
+  font-weight: 600;
 }
 
 .checkbox-row {
@@ -884,11 +929,17 @@ textarea {
   color: var(--text);
 }
 
-.checkbox-row input[type="checkbox"] {
+.checkbox-row input[type="checkbox"],
+.checkbox-row input[type="radio"] {
   width: 18px;
   min-height: 18px;
   height: 18px;
   margin: 0;
+}
+
+.checkbox-row input[type="checkbox"]:disabled,
+.checkbox-row input[type="radio"]:disabled {
+  opacity: 1;
 }
 
 table {
@@ -1735,7 +1786,7 @@ th {
   top: calc(100% + 8px);
   right: 0;
   z-index: 12;
-  min-width: min(520px, calc(100vw - 40px));
+  min-width: min(760px, calc(100vw - 40px));
   padding: 16px;
   border-radius: 18px;
   border: 1px solid var(--line);
@@ -1795,6 +1846,10 @@ th {
 @media (max-width: 640px) {
   .versions-card .section-header {
     align-items: flex-start;
+  }
+
+  .artifact-flags-grid {
+    grid-template-columns: 1fr;
   }
 
   .inline-editor {
