@@ -124,19 +124,9 @@
                 {% endif %}
               </td>
               <td>
-                <div class="cell-stack">
-                  {% set client_system = job.client_system_name or (job.client.system_name if job.client else "-") %}
-                  {% set client_cpu_name = job.client_cpu_name or (job.client.cpu_name if job.client else "") %}
-                  <span>{{ client_system }}{% if client_cpu_name %} | {{ client_cpu_name }}{% endif %}</span>
-                  <span class="muted">{{ (job.client_cpu_flags or (job.client.cpu_flags if job.client else "-"))|replace(",", ", ") }}</span>
-                  {% set client_ram_total_mb = job.client_ram_total_mb if job.client_ram_total_mb is not none else (job.client.ram_total_mb if job.client else 0) %}
-                  {% set client_ram_speed = job.client_ram_speed_mt_s if job.client_ram_speed_mt_s is not none else (job.client.ram_speed_mt_s if job.client else 0) %}
-                  {% if client_ram_total_mb %}
-                    <span class="muted">
-                      {{ "%.1f"|format(client_ram_total_mb / 1024.0) }} GB{% if client_ram_speed %} @ {{ client_ram_speed }} MT/s{% endif %}
-                    </span>
-                  {% endif %}
-                </div>
+                {% set client_system = job.client_system_name or (job.client.system_name if job.client else "-") %}
+                {% set client_cpu_name = job.client_cpu_name or (job.client.cpu_name if job.client else "") %}
+                {{ client_system }}{% if client_cpu_name %} | {{ client_cpu_name }}{% endif %}
               </td>
               <td>
                 {% if job.status == "failed" %}

@@ -15,7 +15,7 @@ from app.db.session import SessionLocal
 
 DIRICHLET_PRIOR = 1.0
 MIN_BASELINE_GAMES = 32
-POOR_JOB_P_VALUE_THRESHOLD = 1e-6
+POOR_JOB_P_VALUE_THRESHOLD = 1e-4
 logger = logging.getLogger("uvicorn.error")
 
 
