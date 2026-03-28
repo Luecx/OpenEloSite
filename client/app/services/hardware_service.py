@@ -8,7 +8,7 @@ import subprocess
 import uuid
 from pathlib import Path
 
-RELEVANT_CPU_FLAGS = ("sse4", "avx", "avx2", "pext", "avx512")
+RELEVANT_CPU_FLAGS = ("sse4", "popcnt", "avx", "avx2", "bmi2", "avx512", "vnni")
 
 
 def _run_command(command: list[str]) -> str:
@@ -264,14 +264,18 @@ def collect_cpu_flags() -> list[str]:
     relevant_flags: set[str] = set()
     if {"sse4", "sse4_1", "sse4_2"} & detected_tokens:
         relevant_flags.add("sse4")
+    if "popcnt" in detected_tokens:
+        relevant_flags.add("popcnt")
     if "avx" in detected_tokens or "avx1.0" in detected_tokens:
         relevant_flags.add("avx")
     if "avx2" in detected_tokens:
         relevant_flags.add("avx2")
     if "pext" in detected_tokens or "bmi2" in detected_tokens:
-        relevant_flags.add("pext")
+        relevant_flags.add("bmi2")
     if any(token.startswith("avx512") for token in detected_tokens):
         relevant_flags.add("avx512")
+    if {"avxvnni", "avx_vnni", "vnni"} & detected_tokens:
+        relevant_flags.add("vnni")
     return [flag for flag in RELEVANT_CPU_FLAGS if flag in relevant_flags]
 
 

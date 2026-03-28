@@ -66,10 +66,12 @@
               <fieldset class="checkbox-fieldset">
                 <legend>{{ tr("Benoetigte CPU-Flags") }}</legend>
                 <label class="checkbox-row"><input type="checkbox" name="required_cpu_flags" value="sse4" /> SSE4</label>
+                <label class="checkbox-row"><input type="checkbox" name="required_cpu_flags" value="popcnt" /> POPCNT</label>
                 <label class="checkbox-row"><input type="checkbox" name="required_cpu_flags" value="avx" /> AVX</label>
                 <label class="checkbox-row"><input type="checkbox" name="required_cpu_flags" value="avx2" /> AVX2</label>
-                <label class="checkbox-row"><input type="checkbox" name="required_cpu_flags" value="pext" /> PEXT</label>
+                <label class="checkbox-row"><input type="checkbox" name="required_cpu_flags" value="bmi2" /> BMI2</label>
                 <label class="checkbox-row"><input type="checkbox" name="required_cpu_flags" value="avx512" /> AVX-512</label>
+                <label class="checkbox-row"><input type="checkbox" name="required_cpu_flags" value="vnni" /> VNNI</label>
               </fieldset>
               <div class="button-row">
                 <button class="button" type="submit">{{ tr("Artifact hochladen") }}</button>

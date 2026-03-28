@@ -32,10 +32,12 @@
       <fieldset class="checkbox-fieldset">
         <legend>{{ tr("Benoetigte CPU-Flags") }}</legend>
         <label class="checkbox-row"><input type="checkbox" name="required_cpu_flags" value="sse4" /> SSE4</label>
+        <label class="checkbox-row"><input type="checkbox" name="required_cpu_flags" value="popcnt" /> POPCNT</label>
         <label class="checkbox-row"><input type="checkbox" name="required_cpu_flags" value="avx" /> AVX</label>
         <label class="checkbox-row"><input type="checkbox" name="required_cpu_flags" value="avx2" /> AVX2</label>
-        <label class="checkbox-row"><input type="checkbox" name="required_cpu_flags" value="pext" /> PEXT</label>
+        <label class="checkbox-row"><input type="checkbox" name="required_cpu_flags" value="bmi2" /> BMI2</label>
         <label class="checkbox-row"><input type="checkbox" name="required_cpu_flags" value="avx512" /> AVX-512</label>
+        <label class="checkbox-row"><input type="checkbox" name="required_cpu_flags" value="vnni" /> VNNI</label>
       </fieldset>
       <button class="button" type="submit">{{ tr("Hochladen") }}</button>
     </form>
@@ -67,10 +69,12 @@
         <fieldset class="checkbox-fieldset">
           <legend>{{ tr("Benoetigte CPU-Flags") }}</legend>
           <label class="checkbox-row"><input type="checkbox" name="required_cpu_flags" value="sse4" {% if 'sse4' in edit_artifact.required_cpu_flags %}checked{% endif %} /> SSE4</label>
+          <label class="checkbox-row"><input type="checkbox" name="required_cpu_flags" value="popcnt" {% if 'popcnt' in edit_artifact.required_cpu_flags %}checked{% endif %} /> POPCNT</label>
           <label class="checkbox-row"><input type="checkbox" name="required_cpu_flags" value="avx" {% if 'avx' in edit_artifact.required_cpu_flags %}checked{% endif %} /> AVX</label>
           <label class="checkbox-row"><input type="checkbox" name="required_cpu_flags" value="avx2" {% if 'avx2' in edit_artifact.required_cpu_flags %}checked{% endif %} /> AVX2</label>
-          <label class="checkbox-row"><input type="checkbox" name="required_cpu_flags" value="pext" {% if 'pext' in edit_artifact.required_cpu_flags %}checked{% endif %} /> PEXT</label>
+          <label class="checkbox-row"><input type="checkbox" name="required_cpu_flags" value="bmi2" {% if 'bmi2' in edit_artifact.required_cpu_flags %}checked{% endif %} /> BMI2</label>
           <label class="checkbox-row"><input type="checkbox" name="required_cpu_flags" value="avx512" {% if 'avx512' in edit_artifact.required_cpu_flags %}checked{% endif %} /> AVX-512</label>
+          <label class="checkbox-row"><input type="checkbox" name="required_cpu_flags" value="vnni" {% if 'vnni' in edit_artifact.required_cpu_flags %}checked{% endif %} /> VNNI</label>
         </fieldset>
         <button class="button" type="submit">{{ tr("Speichern") }}</button>
       </form>

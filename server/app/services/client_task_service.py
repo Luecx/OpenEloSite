@@ -24,14 +24,18 @@ def _required_flag_keys(artifact) -> list[str]:
     flags: list[str] = []
     if artifact.requires_sse4:
         flags.append("sse4")
+    if artifact.requires_popcnt:
+        flags.append("popcnt")
     if artifact.requires_avx:
         flags.append("avx")
     if artifact.requires_avx2:
         flags.append("avx2")
-    if artifact.requires_pext:
-        flags.append("pext")
+    if artifact.requires_bmi2:
+        flags.append("bmi2")
     if artifact.requires_avx512:
         flags.append("avx512")
+    if artifact.requires_vnni:
+        flags.append("vnni")
     return flags
 
 

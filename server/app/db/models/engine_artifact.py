@@ -7,6 +7,7 @@ from sqlalchemy import ForeignKey
 from sqlalchemy import Integer
 from sqlalchemy import String
 from sqlalchemy import Text
+from sqlalchemy import text as sql_text
 from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import mapped_column
 from sqlalchemy.orm import relationship
@@ -19,10 +20,12 @@ class EngineArtifact(Base):
 
     CPU_FLAG_FIELDS = (
         ("requires_sse4", "SSE4"),
+        ("requires_popcnt", "POPCNT"),
         ("requires_avx", "AVX"),
         ("requires_avx2", "AVX2"),
-        ("requires_pext", "PEXT"),
+        ("requires_bmi2", "BMI2"),
         ("requires_avx512", "AVX-512"),
+        ("requires_vnni", "VNNI"),
     )
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -31,12 +34,14 @@ class EngineArtifact(Base):
     file_name: Mapped[str] = mapped_column(String(255))
     file_path: Mapped[str] = mapped_column(Text)
     content_hash: Mapped[str] = mapped_column(String(64))
-    priority: Mapped[int] = mapped_column(Integer, default=0)
-    requires_sse4: Mapped[bool] = mapped_column(default=False)
-    requires_avx: Mapped[bool] = mapped_column(default=False)
-    requires_avx2: Mapped[bool] = mapped_column(default=False)
-    requires_pext: Mapped[bool] = mapped_column(default=False)
-    requires_avx512: Mapped[bool] = mapped_column(default=False)
+    priority: Mapped[int] = mapped_column(Integer, default=0, server_default=sql_text("0"))
+    requires_sse4: Mapped[bool] = mapped_column(default=False, server_default=sql_text("0"))
+    requires_popcnt: Mapped[bool] = mapped_column(default=False, server_default=sql_text("0"))
+    requires_avx: Mapped[bool] = mapped_column(default=False, server_default=sql_text("0"))
+    requires_avx2: Mapped[bool] = mapped_column(default=False, server_default=sql_text("0"))
+    requires_bmi2: Mapped[bool] = mapped_column(default=False, server_default=sql_text("0"))
+    requires_avx512: Mapped[bool] = mapped_column(default=False, server_default=sql_text("0"))
+    requires_vnni: Mapped[bool] = mapped_column(default=False, server_default=sql_text("0"))
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
     engine_version: Mapped["EngineVersion"] = relationship(back_populates="artifacts")

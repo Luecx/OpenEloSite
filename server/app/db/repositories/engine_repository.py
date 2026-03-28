@@ -108,30 +108,36 @@ def update_engine(
 
 
 def _normalize_targets(values: list[str]) -> set[str]:
-    return {item.strip().lower() for item in values if item and item.strip()}
+    return set(client_repository.normalize_cpu_flags(values))
 
 
 def _apply_required_cpu_flags(record: EngineArtifact, required_cpu_flags: list[str]) -> None:
     flag_values = _normalize_targets(required_cpu_flags)
     record.requires_sse4 = "sse4" in flag_values
+    record.requires_popcnt = "popcnt" in flag_values
     record.requires_avx = "avx" in flag_values
     record.requires_avx2 = "avx2" in flag_values
-    record.requires_pext = "pext" in flag_values
+    record.requires_bmi2 = "bmi2" in flag_values
     record.requires_avx512 = "avx512" in flag_values
+    record.requires_vnni = "vnni" in flag_values
 
 
 def _artifact_required_flags(artifact: EngineArtifact) -> set[str]:
     required: set[str] = set()
     if artifact.requires_sse4:
         required.add("sse4")
+    if artifact.requires_popcnt:
+        required.add("popcnt")
     if artifact.requires_avx:
         required.add("avx")
     if artifact.requires_avx2:
         required.add("avx2")
-    if artifact.requires_pext:
-        required.add("pext")
+    if artifact.requires_bmi2:
+        required.add("bmi2")
     if artifact.requires_avx512:
         required.add("avx512")
+    if artifact.requires_vnni:
+        required.add("vnni")
     return required
 
 

@@ -7,6 +7,7 @@ from pathlib import Path
 from app.api.server_client import ServerClient
 from app.services.console_service import ClientConsole
 from app.services.fastchess_service import ensure_fastchess
+from app.services.hardware_service import RELEVANT_CPU_FLAGS
 from app.services.hardware_service import collect_hardware_snapshot
 from app.services.job_runner import JobRunner
 from app.services.self_update_service import ensure_client_bundle_current
@@ -89,6 +90,13 @@ class ClientService:
             ],
             subtitle="Syzygy",
         )
+        self.console.section(
+            "INIT",
+            [
+                ("Active", self._format_cpu_flags()),
+            ],
+            subtitle="CPU Flags",
+        )
         self.runner = JobRunner(self.workspace, fastchess_setup.path, self.max_threads, self.console, self.syzygy)
 
     def register(self) -> int:
@@ -100,7 +108,7 @@ class ClientService:
             "max_threads": self.max_threads,
             "max_hash": self.max_hash,
             "syzygy_max_pieces": self.syzygy.max_pieces,
-            "cpu_flags": sorted(self.cpu_flags),
+            "cpu_flags": [flag for flag in RELEVANT_CPU_FLAGS if flag in self.cpu_flags],
             "cpu_name": self.cpu_name,
             "ram_total_mb": self.ram_total_mb,
             "ram_speed_mt_s": self.ram_speed_mt_s,
@@ -156,6 +164,21 @@ class ClientService:
         if self.ram_speed_mt_s > 0:
             return f"{base} @ {self.ram_speed_mt_s} MT/s"
         return base
+
+    def _format_cpu_flags(self) -> str:
+        label_map = {
+            "sse4": "SSE4",
+            "popcnt": "POPCNT",
+            "avx": "AVX",
+            "avx2": "AVX2",
+            "bmi2": "BMI2",
+            "avx512": "AVX-512",
+            "vnni": "VNNI",
+        }
+        ordered_flags = [flag for flag in RELEVANT_CPU_FLAGS if flag in self.cpu_flags]
+        if not ordered_flags:
+            return "-"
+        return ", ".join(label_map.get(flag, flag.upper()) for flag in ordered_flags)
 
     def send_heartbeat(self) -> None:
         if self.client_id is None:

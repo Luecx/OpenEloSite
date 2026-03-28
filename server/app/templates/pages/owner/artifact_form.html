@@ -28,10 +28,12 @@
         <fieldset class="checkbox-fieldset">
           <legend>{{ tr("Benoetigte CPU-Flags") }}</legend>
           <label class="checkbox-row"><input type="checkbox" name="required_cpu_flags" value="sse4" {% if artifact.requires_sse4 %}checked{% endif %} /> SSE4</label>
+          <label class="checkbox-row"><input type="checkbox" name="required_cpu_flags" value="popcnt" {% if artifact.requires_popcnt %}checked{% endif %} /> POPCNT</label>
           <label class="checkbox-row"><input type="checkbox" name="required_cpu_flags" value="avx" {% if artifact.requires_avx %}checked{% endif %} /> AVX</label>
           <label class="checkbox-row"><input type="checkbox" name="required_cpu_flags" value="avx2" {% if artifact.requires_avx2 %}checked{% endif %} /> AVX2</label>
-          <label class="checkbox-row"><input type="checkbox" name="required_cpu_flags" value="pext" {% if artifact.requires_pext %}checked{% endif %} /> PEXT</label>
+          <label class="checkbox-row"><input type="checkbox" name="required_cpu_flags" value="bmi2" {% if artifact.requires_bmi2 %}checked{% endif %} /> BMI2</label>
           <label class="checkbox-row"><input type="checkbox" name="required_cpu_flags" value="avx512" {% if artifact.requires_avx512 %}checked{% endif %} /> AVX-512</label>
+          <label class="checkbox-row"><input type="checkbox" name="required_cpu_flags" value="vnni" {% if artifact.requires_vnni %}checked{% endif %} /> VNNI</label>
         </fieldset>
         <div class="button-row">
           <button class="button" type="submit">{{ tr("Speichern") }}</button>

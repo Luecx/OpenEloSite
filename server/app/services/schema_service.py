@@ -187,6 +187,17 @@ def _ensure_additive_columns(engine: Engine, table_names: set[str]) -> None:
             if "priority" not in columns:
                 connection.execute(text("ALTER TABLE engine_artifacts ADD COLUMN priority INTEGER DEFAULT 0"))
                 connection.execute(text("UPDATE engine_artifacts SET priority = 0 WHERE priority IS NULL"))
+            if "requires_popcnt" not in columns:
+                connection.execute(text("ALTER TABLE engine_artifacts ADD COLUMN requires_popcnt BOOLEAN DEFAULT 0"))
+                connection.execute(text("UPDATE engine_artifacts SET requires_popcnt = 0 WHERE requires_popcnt IS NULL"))
+            if "requires_bmi2" not in columns:
+                connection.execute(text("ALTER TABLE engine_artifacts ADD COLUMN requires_bmi2 BOOLEAN DEFAULT 0"))
+                if "requires_pext" in columns:
+                    connection.execute(text("UPDATE engine_artifacts SET requires_bmi2 = requires_pext WHERE requires_bmi2 IS NULL OR requires_bmi2 = 0"))
+                connection.execute(text("UPDATE engine_artifacts SET requires_bmi2 = 0 WHERE requires_bmi2 IS NULL"))
+            if "requires_vnni" not in columns:
+                connection.execute(text("ALTER TABLE engine_artifacts ADD COLUMN requires_vnni BOOLEAN DEFAULT 0"))
+                connection.execute(text("UPDATE engine_artifacts SET requires_vnni = 0 WHERE requires_vnni IS NULL"))
 
 
 def ensure_schema(engine: Engine) -> None:

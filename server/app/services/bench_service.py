@@ -25,7 +25,7 @@ def _normalize_flags(values: list[str] | str | None) -> list[str]:
         raw_values = values.split(",")
     else:
         raw_values = list(values)
-    return sorted({item.strip().lower() for item in raw_values if item and item.strip()})
+    return client_repository.normalize_cpu_flags(raw_values)
 
 
 def _artifact_id(relative_path: str, manifest_id: str | None = None) -> str:

@@ -13,7 +13,10 @@ from app.services.syzygy_service import normalize_syzygy_probe_limit
 
 
 ACTIVE_CLIENT_TTL_SECONDS = 120
-RELEVANT_CPU_FLAGS = ("sse4", "avx", "avx2", "pext", "avx512")
+RELEVANT_CPU_FLAGS = ("sse4", "popcnt", "avx", "avx2", "bmi2", "avx512", "vnni")
+CPU_FLAG_ALIASES = {
+    "pext": "bmi2",
+}
 
 
 def _active_cutoff() -> datetime:
@@ -28,7 +31,11 @@ def normalize_cpu_flags(values: list[str] | tuple[str, ...] | set[str] | str | N
     else:
         raw_values = list(values)
     allowed = set(RELEVANT_CPU_FLAGS)
-    normalized = {item.strip().lower() for item in raw_values if item and item.strip() and item.strip().lower() in allowed}
+    normalized = {
+        CPU_FLAG_ALIASES.get(item.strip().lower(), item.strip().lower())
+        for item in raw_values
+        if item and item.strip() and CPU_FLAG_ALIASES.get(item.strip().lower(), item.strip().lower()) in allowed
+    }
     return [flag for flag in RELEVANT_CPU_FLAGS if flag in normalized]
 
 
