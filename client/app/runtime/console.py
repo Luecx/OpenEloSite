@@ -14,7 +14,7 @@ def _format_value(value) -> str:
 
 
 @dataclass(slots=True)
-class ClientConsole:
+class Console:
     def _print(self, text: str = "") -> None:
         print(text, flush=True)
 

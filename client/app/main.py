@@ -7,7 +7,7 @@ from pathlib import Path
 if __package__ in {None, ""}:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from app.services.client_service import ClientService
+from app.runtime.client import OpenEloClient
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -28,7 +28,7 @@ def build_parser() -> argparse.ArgumentParser:
         default=None,
         help="Optional root directory for Syzygy tablebases (scanned recursively up to depth 2)",
     )
-    parser.add_argument("--machine-name", default="", help="Optional machine name override")
+    parser.add_argument("--machine-name", default="", help=argparse.SUPPRESS)
     parser.add_argument("--machine-fingerprint", default="", help="Optional stable machine fingerprint override")
     parser.add_argument("--machine-key", dest="machine_fingerprint", default="", help=argparse.SUPPRESS)
     parser.add_argument("--poll-interval", type=int, default=0, help="Optional poll interval override in seconds")
@@ -44,14 +44,13 @@ def build_parser() -> argparse.ArgumentParser:
 def main() -> None:
     args = build_parser().parse_args()
     try:
-        client = ClientService(
+        client = OpenEloClient(
             server_url=args.server,
             access_key=args.access_key,
             max_threads=args.threads,
             max_hash=args.hash,
             workdir=args.workdir,
             syzygy_root=args.syzygy_root,
-            machine_name=args.machine_name,
             machine_fingerprint=args.machine_fingerprint,
             poll_interval_override=args.poll_interval,
             heartbeat_interval_override=args.heartbeat_interval,

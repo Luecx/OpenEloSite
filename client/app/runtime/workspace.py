@@ -20,7 +20,7 @@ class ResolvedBook:
     status: str
 
 
-class WorkspaceService:
+class Workspace:
     def __init__(self, root: Path):
         self.root = root.expanduser().resolve()
         self.books_dir = self.root / "books"
@@ -39,6 +39,8 @@ class WorkspaceService:
 
     def cleanup_for_job(self) -> None:
         self.ensure_layout()
+        # Keep shared caches across jobs, but reset per-match artifacts and log
+        # files so every run starts from a predictable workspace state.
         for entry in self.root.iterdir():
             if entry.name in {"books", "bench", "fast-chess"}:
                 continue

@@ -5,33 +5,32 @@ import time
 from pathlib import Path
 
 from app.api.server_client import ServerClient
-from app.services.console_service import ClientConsole
-from app.services.fastchess_service import ensure_fastchess
-from app.services.hardware_service import RELEVANT_CPU_FLAGS
-from app.services.hardware_service import collect_hardware_snapshot
-from app.services.job_runner import JobRunner
-from app.services.syzygy_service import inspect_syzygy_root
-from app.services.workspace_service import WorkspaceService
+from app.runtime.console import Console
+from app.runtime.fastchess import resolve_fastchess
+from app.runtime.hardware import RELEVANT_CPU_FLAGS, collect_hardware_snapshot
+from app.runtime.match_runner import MatchRunner
+from app.runtime.syzygy import scan_syzygy_root
+from app.runtime.workspace import Workspace
 
 
 class _HeartbeatThread(threading.Thread):
-    def __init__(self, service: "ClientService"):
+    def __init__(self, client: "OpenEloClient"):
         super().__init__(daemon=True)
-        self.service = service
+        self.client = client
         self.stop_event = threading.Event()
 
     def run(self) -> None:
-        while not self.stop_event.wait(self.service.heartbeat_interval):
+        while not self.stop_event.wait(self.client.heartbeat_interval):
             try:
-                self.service.send_heartbeat()
+                self.client.send_heartbeat()
             except Exception as error:
-                self.service.console.status("WARN", f"Heartbeat failed: {error}")
+                self.client.console.status("WARN", f"Heartbeat failed: {error}")
 
     def stop(self) -> None:
         self.stop_event.set()
 
 
-class ClientService:
+class OpenEloClient:
     def __init__(
         self,
         server_url: str,
@@ -40,7 +39,6 @@ class ClientService:
         max_hash: int,
         workdir: Path,
         syzygy_root: Path | None = None,
-        machine_name: str = "",
         machine_fingerprint: str = "",
         poll_interval_override: int = 0,
         heartbeat_interval_override: int = 0,
@@ -50,13 +48,15 @@ class ClientService:
         if max_hash <= 0:
             raise ValueError("hash must be greater than 0")
 
-        self.console = ClientConsole()
+        self.console = Console()
         self.console.banner("OpenELO Client")
         self.server = ServerClient(server_url, access_key)
         self.max_threads = int(max_threads)
         self.max_hash = int(max_hash)
+
+        # Capture the hardware snapshot once per process so this client record
+        # reflects the concrete resources of the current run.
         hardware = collect_hardware_snapshot()
-        self.machine_name = "client"
         self.machine_fingerprint = machine_fingerprint.strip() or str(hardware["machine_fingerprint"])
         self.poll_interval_override = max(0, int(poll_interval_override))
         self.heartbeat_interval_override = max(0, int(heartbeat_interval_override))
@@ -69,10 +69,10 @@ class ClientService:
         self.cpu_name = str(hardware["cpu_name"] or "").strip() or "unknown cpu"
         self.ram_total_mb = max(0, int(hardware["ram_total_mb"] or 0))
         self.ram_speed_mt_s = int(hardware["ram_speed_mt_s"] or 0)
-        self.workspace = WorkspaceService(workdir)
-        self.syzygy = inspect_syzygy_root(syzygy_root)
+        self.workspace = Workspace(workdir)
+        self.syzygy = scan_syzygy_root(syzygy_root)
 
-        fastchess_setup = ensure_fastchess(self.workspace.root)
+        fastchess_setup = resolve_fastchess(self.workspace.root)
         fastchess_rows: list[tuple[str, object]] = []
         if fastchess_setup.git_target:
             fastchess_rows.append(("Git target", fastchess_setup.git_target))
@@ -95,7 +95,13 @@ class ClientService:
             ],
             subtitle="CPU Flags",
         )
-        self.runner = JobRunner(self.workspace, fastchess_setup.path, self.max_threads, self.console, self.syzygy)
+        self.runner = MatchRunner(
+            workspace=self.workspace,
+            fastchess_path=fastchess_setup.path,
+            max_threads=self.max_threads,
+            console=self.console,
+            syzygy=self.syzygy,
+        )
 
     def register(self) -> int:
         payload = {
@@ -112,7 +118,10 @@ class ClientService:
         }
         response = self.server.post("/api/client/register", payload)
         self.client_id = int(response["client_id"])
-        self.heartbeat_interval = self.heartbeat_interval_override or int(response.get("heartbeat_interval_seconds", 15) or 15)
+        self.heartbeat_interval = (
+            self.heartbeat_interval_override
+            or int(response.get("heartbeat_interval_seconds", 15) or 15)
+        )
         self.poll_interval = self.poll_interval_override or int(response.get("poll_interval_seconds", 5) or 5)
         bench = response.get("bench")
         if not isinstance(bench, dict):
@@ -135,7 +144,7 @@ class ClientService:
                 ("Fingerprint", self.machine_fingerprint),
                 ("System", self.system_name),
                 ("CPU", self.cpu_name),
-                ("CPU Flags", ", ".join(sorted(self.cpu_flags)) if self.cpu_flags else "none"),
+                ("CPU Flags", self._format_cpu_flags()),
                 ("RAM", self._format_ram_summary()),
                 ("Threads", self.max_threads),
                 ("Hash", f"{self.max_hash} MB"),

@@ -88,7 +88,7 @@ class SyzygyLayout:
         return os.pathsep.join(str(path) for path in self.directories_for_probe_limit(probe_limit))
 
 
-def inspect_syzygy_root(root: Path | None) -> SyzygyLayout:
+def scan_syzygy_root(root: Path | None) -> SyzygyLayout:
     if root is None:
         return SyzygyLayout(root=None, paths_345=(), paths_6=(), paths_7=())
 

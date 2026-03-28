@@ -39,7 +39,7 @@ def _binary_from_path() -> Path | None:
     return None
 
 
-def ensure_fastchess(workdir: Path) -> FastchessSetup:
+def resolve_fastchess(workdir: Path) -> FastchessSetup:
     path_binary = _binary_from_path()
     if path_binary is not None:
         _run([str(path_binary), "-version"], path_binary.parent, "fast-chess check")

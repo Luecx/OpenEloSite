@@ -1,19 +1,20 @@
 from __future__ import annotations
 
 import base64
-from dataclasses import dataclass
 import re
 import shlex
 import subprocess
 import time
-from pathlib import Path
 import zipfile
+from dataclasses import dataclass
+from pathlib import Path
 
 from app.api.server_client import ServerClient
-from app.services.syzygy_service import SyzygyLayout
-from app.services.syzygy_service import normalize_syzygy_probe_limit
-from app.services.syzygy_service import syzygy_label
-from app.services.workspace_service import WorkspaceService
+from app.runtime.console import Console
+from app.runtime.syzygy import SyzygyLayout
+from app.runtime.syzygy import normalize_syzygy_probe_limit
+from app.runtime.syzygy import syzygy_label
+from app.runtime.workspace import Workspace
 
 
 @dataclass(frozen=True, slots=True)
@@ -31,8 +32,15 @@ class SyzygyRunConfig:
     directories: tuple[Path, ...]
 
 
-class JobRunner:
-    def __init__(self, workspace: WorkspaceService, fastchess_path: Path, max_threads: int, console, syzygy: SyzygyLayout):
+class MatchRunner:
+    def __init__(
+        self,
+        workspace: Workspace,
+        fastchess_path: Path,
+        max_threads: int,
+        console: Console,
+        syzygy: SyzygyLayout,
+    ):
         self.workspace = workspace
         self.fastchess_path = fastchess_path.expanduser().resolve()
         self.max_threads = max_threads
@@ -49,7 +57,7 @@ class JobRunner:
 
     def run(self, job: dict, book_path: Path | None, cpu_flags: set[str], server: ServerClient, system_name: str) -> dict:
         self.workspace.cleanup_for_job()
-        self._check_required_flags(job, cpu_flags, system_name)
+        self._validate_job_compatibility(job, cpu_flags, system_name)
         start_time = time.monotonic()
 
         concurrency = self.max_threads // max(1, int(job["threads_per_engine"]))
@@ -69,8 +77,8 @@ class JobRunner:
             ],
         )
 
-        engine1_path = self._prepare_engine(job["engine_1"], self.workspace.engine1_dir, "engine1", server)
-        engine2_path = self._prepare_engine(job["engine_2"], self.workspace.engine2_dir, "engine2", server)
+        engine1_path = self._prepare_engine(job["engine_1"], self.workspace.engine1_dir, server)
+        engine2_path = self._prepare_engine(job["engine_2"], self.workspace.engine2_dir, server)
         self.console.section(
             "ARTIFACTS",
             [
@@ -143,7 +151,7 @@ class JobRunner:
             "runtime_seconds": runtime_seconds,
         }
 
-    def _check_required_flags(self, job: dict, cpu_flags: set[str], system_name: str) -> None:
+    def _validate_job_compatibility(self, job: dict, cpu_flags: set[str], system_name: str) -> None:
         for engine_key in ("engine_1", "engine_2"):
             artifact = job[engine_key].get("artifact") or {}
             required = sorted({item.strip().lower() for item in artifact.get("required_cpu_flags", []) if item})
@@ -154,7 +162,7 @@ class JobRunner:
             if artifact_system and artifact_system != system_name.strip().lower():
                 raise RuntimeError(f"{engine_key} requires system {artifact_system}, but client is {system_name}")
 
-    def _prepare_engine(self, engine: dict, target_dir: Path, label: str, server: ServerClient) -> Path:
+    def _prepare_engine(self, engine: dict, target_dir: Path, server: ServerClient) -> Path:
         target_dir.mkdir(parents=True, exist_ok=True)
         artifact = engine.get("artifact") or {}
         return self.workspace.ensure_artifact(artifact, target_dir, server)
@@ -348,6 +356,8 @@ class JobRunner:
     def _format_command_lines(self, command: list[str]) -> list[str]:
         if not command:
             return []
+        # Group tokens by their top-level fast-chess section so the rendered
+        # command stays readable and easy to copy for manual debugging.
         lines = [f"{command[0]} \\"]
         groups: list[list[str]] = []
         current: list[str] = []

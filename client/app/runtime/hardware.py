@@ -120,6 +120,8 @@ def _is_amd_vendor() -> bool:
 
 
 def _is_probable_zen2(cpu_name: str) -> bool:
+    # Brand strings are messy, so prefer family/model when Linux exposes them
+    # and keep the explicit-name fallback intentionally conservative.
     normalized_name = cpu_name.strip().lower()
     if not normalized_name or "amd" not in normalized_name:
         return False
@@ -451,6 +453,8 @@ def collect_cpu_flags() -> list[str]:
 def collect_hardware_snapshot() -> dict[str, object]:
     cpu_name = detect_cpu_name()
     cpu_flags = collect_cpu_flags()
+    # Zen 2 reports BMI2 support, but many chess engines only benefit from
+    # that path on later microarchitectures with stronger PEXT/PDEP behavior.
     if "bmi2" in cpu_flags and _is_probable_zen2(cpu_name):
         cpu_flags = [flag for flag in cpu_flags if flag != "bmi2"]
     return {
