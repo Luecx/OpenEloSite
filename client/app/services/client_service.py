@@ -138,6 +138,7 @@ class ClientService:
                 ("Machine", self.machine_name),
                 ("System", self.system_name),
                 ("CPU", self.cpu_name),
+                ("CPU Flags", ", ".join(sorted(self.cpu_flags)) if self.cpu_flags else "none"),
                 ("RAM", self._format_ram_summary()),
                 ("Threads", self.max_threads),
                 ("Hash", f"{self.max_hash} MB"),
