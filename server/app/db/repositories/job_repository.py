@@ -179,6 +179,46 @@ def list_jobs_for_match(db: Session, match_id: int) -> list[MatchJob]:
     )
 
 
+def _terminal_jobs(jobs: list[MatchJob]) -> list[MatchJob]:
+    return [job for job in jobs if job.status in {"completed", "failed"}]
+
+
+def _counted_jobs(jobs: list[MatchJob]) -> list[MatchJob]:
+    return [job for job in jobs if job.status == "completed" and not bool(job.is_poor)]
+
+
+def apply_match_results_from_jobs(match: Match, jobs: list[MatchJob]) -> Match:
+    terminal_jobs = _terminal_jobs(jobs)
+    counted_jobs = _counted_jobs(terminal_jobs)
+
+    match.wins = sum(item.wins for item in counted_jobs)
+    match.draws = sum(item.draws for item in counted_jobs)
+    match.losses = sum(item.losses for item in counted_jobs)
+    match.games_count = sum(item.games_count for item in counted_jobs)
+
+    has_completed_jobs = any(item.status == "completed" for item in terminal_jobs)
+    has_failed_jobs = any(item.status == "failed" for item in terminal_jobs)
+    if has_completed_jobs:
+        match.status = "completed"
+    elif has_failed_jobs:
+        match.status = "failed"
+    else:
+        match.status = "completed"
+
+    if match.games_count <= 0:
+        match.result_text = None
+    elif match.games_count == 1:
+        if match.wins:
+            match.result_text = "1-0"
+        elif match.losses:
+            match.result_text = "0-1"
+        else:
+            match.result_text = "1/2-1/2"
+    else:
+        match.result_text = f"{match.wins}W {match.draws}D {match.losses}L"
+    return match
+
+
 def list_matches_for_rating_lists(db: Session, rating_list_ids: list[int]) -> list[Match]:
     if not rating_list_ids:
         return []
@@ -263,32 +303,7 @@ def get_matchup(db: Session, rating_list_id: int, version_a_id: int, version_b_i
 
 def refresh_match(db: Session, match: Match) -> Match:
     finished_jobs = list_jobs_for_match(db, match.id)
-    match.wins = sum(item.wins for item in finished_jobs if item.status == "completed")
-    match.draws = sum(item.draws for item in finished_jobs if item.status == "completed")
-    match.losses = sum(item.losses for item in finished_jobs if item.status == "completed")
-    match.games_count = sum(item.games_count for item in finished_jobs if item.status == "completed")
-
-    has_completed_jobs = any(item.status == "completed" for item in finished_jobs)
-    has_failed_jobs = any(item.status == "failed" for item in finished_jobs)
-    if has_completed_jobs:
-        match.status = "completed"
-    elif has_failed_jobs:
-        match.status = "failed"
-    else:
-        match.status = "completed"
-
-    if match.games_count <= 0:
-        match.result_text = None
-    elif match.games_count == 1:
-        if match.wins:
-            match.result_text = "1-0"
-        elif match.losses:
-            match.result_text = "0-1"
-        else:
-            match.result_text = "1/2-1/2"
-    else:
-        match.result_text = f"{match.wins}W {match.draws}D {match.losses}L"
-
+    apply_match_results_from_jobs(match, finished_jobs)
     db.commit()
     db.refresh(match)
     return match

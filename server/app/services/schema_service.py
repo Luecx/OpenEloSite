@@ -161,11 +161,16 @@ def _ensure_additive_columns(engine: Engine, table_names: set[str]) -> None:
             ("client_ram_total_mb", "ALTER TABLE match_jobs ADD COLUMN client_ram_total_mb INTEGER"),
             ("client_ram_speed_mt_s", "ALTER TABLE match_jobs ADD COLUMN client_ram_speed_mt_s INTEGER"),
             ("client_cpu_flags", "ALTER TABLE match_jobs ADD COLUMN client_cpu_flags TEXT"),
+            ("is_poor", "ALTER TABLE match_jobs ADD COLUMN is_poor BOOLEAN DEFAULT 0"),
+            ("poor_p_value", "ALTER TABLE match_jobs ADD COLUMN poor_p_value FLOAT"),
+            ("poor_reason", "ALTER TABLE match_jobs ADD COLUMN poor_reason TEXT"),
         ]
         with engine.begin() as connection:
             for column_name, statement in alter_statements:
                 if column_name not in columns:
                     connection.execute(text(statement))
+            if "is_poor" not in columns:
+                connection.execute(text("UPDATE match_jobs SET is_poor = 0 WHERE is_poor IS NULL"))
             if "client_machine_key" in columns:
                 connection.execute(text("UPDATE match_jobs SET client_machine_fingerprint = client_machine_key WHERE (client_machine_fingerprint IS NULL OR client_machine_fingerprint = '') AND client_machine_key IS NOT NULL AND client_machine_key != ''"))
 

@@ -234,6 +234,7 @@ _TRANSLATIONS = {
     "Book nicht gefunden.": {"en": "Book not found."},
     "Book gespeichert.": {"en": "Book saved."},
     "Book entfernt.": {"en": "Book removed."},
+    "Schwacher Job / ignoriert": {"en": "Poor job / ignored"},
     "Bench-Artifact hochgeladen.": {"en": "Bench artifact uploaded."},
     "Bench-Artifact nicht gefunden.": {"en": "Bench artifact not found."},
     "Bench-Artifact gespeichert.": {"en": "Bench artifact saved."},

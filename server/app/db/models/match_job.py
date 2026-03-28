@@ -3,10 +3,12 @@ from __future__ import annotations
 from datetime import datetime
 
 from sqlalchemy import DateTime
+from sqlalchemy import Float
 from sqlalchemy import ForeignKey
 from sqlalchemy import Integer
 from sqlalchemy import String
 from sqlalchemy import Text
+from sqlalchemy import text as sql_text
 from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import mapped_column
 from sqlalchemy.orm import relationship
@@ -40,6 +42,9 @@ class MatchJob(Base):
     losses: Mapped[int] = mapped_column(Integer, default=0)
     games_count: Mapped[int] = mapped_column(Integer, default=0)
     result_text: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    is_poor: Mapped[bool] = mapped_column(default=False, server_default=sql_text("0"))
+    poor_p_value: Mapped[float | None] = mapped_column(Float, nullable=True)
+    poor_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
     pgn_zip_path: Mapped[str | None] = mapped_column(Text, nullable=True)
     error_text: Mapped[str | None] = mapped_column(Text, nullable=True)
     runtime_seconds: Mapped[int | None] = mapped_column(Integer, nullable=True)

@@ -105,7 +105,7 @@
         </thead>
         <tbody>
           {% for job in jobs %}
-            <tr class="{% if job.status == 'failed' %}job-row-error{% endif %}">
+            <tr class="{% if job.status == 'failed' %}job-row-error{% elif job.is_poor %}job-row-poor{% endif %}">
               <td>
                 {% set client_name = job.client.display_name if job.client else (tr("Client") ~ ((" " ~ job.client_id|string) if job.client_id else "")) %}
                 {% if job.client_id %}
@@ -142,7 +142,18 @@
                 {% if job.status == "failed" %}
                   <span class="status-error">{{ tr("Fehlgeschlagen") }}</span>
                 {% else %}
-                  {{ job.result_text or job.status }}
+                  <div class="cell-stack">
+                    <span>{{ job.result_text or job.status }}</span>
+                    {% if job.is_poor %}
+                      <span class="status-poor">{{ tr("Schwacher Job / ignoriert") }}</span>
+                      {% if job.poor_p_value is not none %}
+                        <span class="muted">p={{ "%.1e"|format(job.poor_p_value) }}</span>
+                      {% endif %}
+                      {% if job.poor_reason %}
+                        <span class="muted">{{ job.poor_reason }}</span>
+                      {% endif %}
+                    {% endif %}
+                  </div>
                 {% endif %}
               </td>
               <td>{{ job.games_count or job.num_games }}</td>

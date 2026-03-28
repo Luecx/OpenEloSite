@@ -1233,8 +1233,17 @@ th {
   font-weight: 700;
 }
 
+.status-poor {
+  color: var(--danger);
+  font-weight: 700;
+}
+
 .job-row-error td {
   background: color-mix(in srgb, var(--danger-soft) 72%, transparent 28%);
+}
+
+.job-row-poor td {
+  background: color-mix(in srgb, var(--danger-soft) 48%, transparent 52%);
 }
 
 .token-box code {

@@ -8,6 +8,7 @@ from app.db.repositories import client_repository
 from app.db.repositories import job_repository
 from app.services import job_pgn_service
 from app.services import leaderboard_service
+from app.services import poor_job_service
 
 
 def summarize_counts(wins: int, draws: int, losses: int) -> str:
@@ -56,7 +57,8 @@ def delete_job(db: Session, job_id: int) -> bool:
     if match is not None:
         remaining_jobs = job_repository.list_jobs_for_match(db, match.id)
         if remaining_jobs:
-            job_repository.refresh_match(db, match)
+            poor_job_service.review_match_by_id(db, match.id)
+            db.commit()
         else:
             job_repository.delete_match(db, match)
     return True
@@ -150,10 +152,7 @@ def record_match_result(
         db.commit()
         db.refresh(completed)
     match = job_repository.get_match(db, completed.match_id) if completed.match_id else None
-
-    if (
-        match is not None
-        and match.rating_list_id
-    ):
-        job_repository.refresh_match(db, match)
+    if match is not None and match.rating_list_id:
+        poor_job_service.review_match_by_id(db, match.id)
+        db.commit()
     return completed
