@@ -4,9 +4,9 @@
 
 {% block content %}
   <section class="section">
-    {{ breadcrumb([{"href": "/clients", "label": tr("Clients")}, {"href": "", "label": client.machine_name}]) }}
+    {{ breadcrumb([{"href": "/clients", "label": tr("Clients")}, {"href": "", "label": client.display_name}]) }}
     <div class="section-header">
-      <h1>{{ client.machine_name }}</h1>
+      <h1>{{ client.display_name }}</h1>
       <p class="muted">{{ tr("Der Client meldet sich mit Heartbeats beim Server und zieht Jobs selbststaendig nach.") }}</p>
     </div>
 
@@ -16,8 +16,8 @@
         <table>
           <tbody>
             <tr>
-              <th>{{ tr("Maschinenname") }}</th>
-              <td>{{ client.machine_name }}</td>
+              <th>{{ tr("Client") }}</th>
+              <td>{{ client.display_name }}</td>
               <th>{{ tr("Nutzer") }}</th>
               <td><a href="/users/{{ client.user.id }}">{{ client.user.display_name }}</a></td>
             </tr>

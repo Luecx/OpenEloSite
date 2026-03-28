@@ -21,7 +21,7 @@
         <tbody>
           {% for client in clients %}
             <tr>
-              <td><a href="/clients/{{ client.id }}">{{ client.machine_name }}</a></td>
+              <td><a href="/clients/{{ client.id }}">{{ client.display_name }}</a></td>
               <td><a href="/users/{{ client.user.id }}">{{ client.user.display_name }}</a></td>
               <td>{{ client.system_name }}</td>
               <td><code>{{ client.machine_fingerprint or client.machine_key }}</code></td>

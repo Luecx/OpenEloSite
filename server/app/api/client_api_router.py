@@ -37,7 +37,6 @@ def get_api_user(authorization: str | None = Header(default=None), db: Session =
 
 def _register_or_update_client(payload: dict, db: Session, user):
     machine_fingerprint = (payload.get("machine_fingerprint") or payload.get("machine_key") or "").strip()
-    machine_name = (payload.get("machine_name") or machine_fingerprint or "client").strip()
     if not machine_fingerprint:
         raise HTTPException(status_code=400, detail="machine_fingerprint is required")
     try:
@@ -45,7 +44,7 @@ def _register_or_update_client(payload: dict, db: Session, user):
             db=db,
             user_id=user.id,
             machine_fingerprint=machine_fingerprint,
-            machine_name=machine_name,
+            machine_name="client",
             system_name=payload.get("system_name", "linux"),
             cpu_name=payload.get("cpu_name"),
             ram_total_mb=payload.get("ram_total_mb"),
@@ -67,10 +66,9 @@ def register_client(
 ):
     client = _register_or_update_client(payload, db, user)
     logger.info(
-        "[client-register] accepted client_id=%s user_id=%s machine=%s system=%s cpu=%s ram_mb=%s threads=%s hash_mb=%s syzygy=%s flags=%s",
+        "[client-register] accepted client_id=%s user_id=%s system=%s cpu=%s ram_mb=%s threads=%s hash_mb=%s syzygy=%s flags=%s",
         client.id,
         user.id,
-        client.machine_name,
         client.system_name,
         client.cpu_name or "-",
         client.ram_total_mb,

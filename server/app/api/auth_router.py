@@ -64,7 +64,7 @@ def login_action(
 
     session_token = auth_service.create_login_session(db, user, request.headers.get("user-agent"))
     audit_service.log_action(db, user.id, "login", "user", str(user.id), "Login erfolgreich.")
-    response = redirect_to("/dashboard", "Willkommen bei OpenELO.")
+    response = redirect_to("/profile", "Willkommen bei OpenELO.")
     response.set_cookie("openeelo_session", session_token, httponly=True, samesite="lax")
     return response
 

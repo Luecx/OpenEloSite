@@ -92,7 +92,7 @@
       <h2>{{ tr("Clients") }}</h2>
       <ul class="simple-list">
         {% for client in my_clients %}
-          <li><a href="/clients/{{ client.id }}">{{ client.machine_name }}</a> | {{ client.max_threads }} {{ tr("Threads") }} | {{ client.max_hash }} MB {{ tr("Hash") }}</li>
+          <li><a href="/clients/{{ client.id }}">{{ client.display_name }}</a> | {{ client.max_threads }} {{ tr("Threads") }} | {{ client.max_hash }} MB {{ tr("Hash") }}</li>
         {% else %}
           <li>{{ tr("Keine aktiven Clients vorhanden.") }}</li>
         {% endfor %}

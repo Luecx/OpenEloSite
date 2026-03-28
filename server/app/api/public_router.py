@@ -353,7 +353,7 @@ def client_detail_page(client_id: int, request: Request, db: Session = Depends(g
         supported_cpu_flags=client_repository.parse_cpu_flags(client.cpu_flags),
         client_ram_summary=_format_ram_summary(client.ram_total_mb, client.ram_speed_mt_s),
         client_flag_rows=client_flag_rows,
-        page_title=f"Client {client.machine_name}",
+        page_title=client.display_name,
     )
     return templates.TemplateResponse("pages/tester/client_detail.html", context)
 

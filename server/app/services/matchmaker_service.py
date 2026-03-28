@@ -113,9 +113,8 @@ def _log_candidate_preview(client: Client, candidates: list[dict]) -> None:
         for item in candidates[:5]
     ]
     logger.info(
-        "[matchmaker] client_id=%s machine=%s candidates=%s top=%s",
+        "[matchmaker] client_id=%s candidates=%s top=%s",
         client.id,
-        client.machine_name,
         len(candidates),
         " | ".join(preview_parts) if preview_parts else "-",
     )
@@ -123,9 +122,8 @@ def _log_candidate_preview(client: Client, candidates: list[dict]) -> None:
 
 def _log_no_candidate_debug(db: Session, client: Client, state: dict) -> None:
     logger.info(
-        "[matchmaker] no assignment for client_id=%s machine=%s user_id=%s system=%s flags=%s threads=%s hash=%s syzygy=%s",
+        "[matchmaker] no assignment for client_id=%s user_id=%s system=%s flags=%s threads=%s hash=%s syzygy=%s",
         client.id,
-        client.machine_name,
         client.user_id,
         client.system_name,
         _format_client_flags(client.cpu_flags),

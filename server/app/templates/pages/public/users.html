@@ -60,7 +60,7 @@
                 {% set user_active_clients = active_clients_by_user.get(user.id, []) %}
                 {% if user_active_clients %}
                   {% for client in user_active_clients %}
-                    <a href="/clients/{{ client.id }}">{{ client.machine_name }}</a>{% if not loop.last %}, {% endif %}
+                    <a href="/clients/{{ client.id }}">{{ client.display_name }}</a>{% if not loop.last %}, {% endif %}
                   {% endfor %}
                 {% else %}
                   0

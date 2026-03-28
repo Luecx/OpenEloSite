@@ -30,7 +30,7 @@
       <h2>{{ tr("Aktiver Client") }}</h2>
       {% if preview_client %}
         <p class="muted">
-          <a href="/clients/{{ preview_client.id }}">{{ preview_client.machine_name }}</a>
+          <a href="/clients/{{ preview_client.id }}">{{ preview_client.display_name }}</a>
           | {{ preview_client.system_name }}
           | {{ tr("Threads") }} {{ preview_client.max_threads }}
           | {{ tr("Hash") }} {{ preview_client.max_hash }} MB

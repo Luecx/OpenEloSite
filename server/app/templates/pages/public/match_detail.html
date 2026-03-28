@@ -107,7 +107,7 @@
           {% for job in jobs %}
             <tr class="{% if job.status == 'failed' %}job-row-error{% endif %}">
               <td>
-                {% set client_name = job.client_machine_name or (job.client.machine_name if job.client else "-") %}
+                {% set client_name = job.client.display_name if job.client else (tr("Client") ~ ((" " ~ job.client_id|string) if job.client_id else "")) %}
                 {% if job.client_id %}
                   <a href="/clients/{{ job.client_id }}">{{ client_name }}</a>
                 {% else %}

@@ -88,7 +88,7 @@ def update_user_role(
 
 @router.get("/versions")
 def versions_page(request: Request, db: Session = Depends(get_db), current_user=Depends(require_role(ADMIN_ROLE))):
-    return RedirectResponse(url="/dashboard", status_code=303)
+    return RedirectResponse(url="/admin", status_code=303)
 
 
 @router.get("/catalog")

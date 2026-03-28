@@ -42,3 +42,7 @@ class Client(Base):
     @property
     def syzygy_label(self) -> str:
         return syzygy_label(self.syzygy_max_pieces)
+
+    @property
+    def display_name(self) -> str:
+        return f"Client {self.id}"

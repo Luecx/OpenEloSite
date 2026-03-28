@@ -56,7 +56,7 @@ class ClientService:
         self.max_threads = int(max_threads)
         self.max_hash = int(max_hash)
         hardware = collect_hardware_snapshot()
-        self.machine_name = machine_name.strip() or str(hardware["machine_name"])
+        self.machine_name = "client"
         self.machine_fingerprint = machine_fingerprint.strip() or str(hardware["machine_fingerprint"])
         self.poll_interval_override = max(0, int(poll_interval_override))
         self.heartbeat_interval_override = max(0, int(heartbeat_interval_override))
@@ -100,7 +100,6 @@ class ClientService:
     def register(self) -> int:
         payload = {
             "machine_fingerprint": self.machine_fingerprint,
-            "machine_name": self.machine_name,
             "system_name": self.system_name,
             "max_threads": self.max_threads,
             "max_hash": self.max_hash,
@@ -134,7 +133,6 @@ class ClientService:
             [
                 ("Client ID", self.client_id),
                 ("Fingerprint", self.machine_fingerprint),
-                ("Machine", self.machine_name),
                 ("System", self.system_name),
                 ("CPU", self.cpu_name),
                 ("CPU Flags", ", ".join(sorted(self.cpu_flags)) if self.cpu_flags else "none"),

@@ -57,7 +57,7 @@
       <h2>{{ tr("Aktive Clients") }}</h2>
       <ul class="compact-link-list">
         {% for client in profile_clients %}
-          <li><a href="/clients/{{ client.id }}">{{ client.machine_name }}</a> | {{ client.system_name }} | {{ client.max_threads }}T / {{ client.max_hash }} MB</li>
+          <li><a href="/clients/{{ client.id }}">{{ client.display_name }}</a> | {{ client.system_name }} | {{ client.max_threads }}T / {{ client.max_hash }} MB</li>
         {% else %}
           <li>{{ tr("Keine aktiven Clients.") }}</li>
         {% endfor %}

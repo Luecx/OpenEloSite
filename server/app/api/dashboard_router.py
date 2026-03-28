@@ -8,16 +8,17 @@ from sqlalchemy.orm import Session
 
 from app.api.http import redirect_to
 from app.api.templates import templates
-from app.db.repositories import client_repository
-from app.db.repositories import engine_repository
 from app.db.repositories import token_repository
 from app.db.repositories import user_repository
 from app.db.session import get_db
 from app.security.current_user import get_current_user_required
 from app.security.token_factory import create_plain_token
 from app.services import audit_service
-from app.services.dashboard_service import get_summary
 from app.services.template_service import build_context
+from fastapi.responses import RedirectResponse
+
+from app.db.repositories import client_repository
+from app.db.repositories import engine_repository
 
 
 router = APIRouter()
@@ -25,15 +26,7 @@ router = APIRouter()
 
 @router.get("/dashboard")
 def dashboard(request: Request, db: Session = Depends(get_db), current_user=Depends(get_current_user_required)):
-    context = build_context(
-        request,
-        current_user,
-        summary=get_summary(db),
-        my_clients=client_repository.list_clients_for_user(db, current_user.id)[:5],
-        my_engines=engine_repository.list_user_engines(db, current_user.id)[:5],
-        page_title="Dashboard",
-    )
-    return templates.TemplateResponse("pages/dashboard/index.html", context)
+    return RedirectResponse(url="/profile", status_code=303)
 
 
 @router.get("/profile")
