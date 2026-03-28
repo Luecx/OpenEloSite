@@ -221,6 +221,35 @@ def pick_compatible_bench_artifact(system_name: str, cpu_flags: list[str] | str 
     return None
 
 
+def describe_bench_compatibility(system_name: str, cpu_flags: list[str] | str | set[str] | None) -> list[dict]:
+    normalized_system = (system_name or "").strip().lower()
+    client_flags = client_repository.parse_cpu_flags(
+        cpu_flags if isinstance(cpu_flags, str) else client_repository.serialize_cpu_flags(cpu_flags)
+    )
+    descriptions: list[dict] = []
+    for artifact in list_bench_artifacts():
+        reasons: list[str] = []
+        if artifact["system_name"] != normalized_system:
+            reasons.append(f"system={artifact['system_name']}")
+        missing_flags = sorted(set(artifact["required_cpu_flags"]) - client_flags)
+        if missing_flags:
+            reasons.append(f"missing flags: {', '.join(missing_flags)}")
+        if int(artifact.get("reference_nps") or 0) <= 0:
+            reasons.append("reference_nps <= 0")
+        descriptions.append(
+            {
+                "id": artifact["id"],
+                "file_name": artifact["file_name"],
+                "system_name": artifact["system_name"],
+                "required_cpu_flags": artifact["required_cpu_flags"],
+                "reference_nps": artifact["reference_nps"],
+                "compatible": not reasons,
+                "reasons": reasons,
+            }
+        )
+    return descriptions
+
+
 def move_bench_artifact_priority(artifact_id: str, direction: str) -> dict | None:
     normalized_id = _safe_id(artifact_id)
     manifest = _load_manifest()

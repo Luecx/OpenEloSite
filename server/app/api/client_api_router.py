@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import logging
+
 from fastapi import APIRouter
 from fastapi import Body
 from fastapi import Depends
@@ -20,6 +22,7 @@ from app.services.client_task_service import get_client_task_worker
 
 
 router = APIRouter(prefix="/api/client")
+logger = logging.getLogger("uvicorn.error")
 
 
 def get_api_user(authorization: str | None = Header(default=None), db: Session = Depends(get_db)):
@@ -33,10 +36,6 @@ def get_api_user(authorization: str | None = Header(default=None), db: Session =
 
 
 def _register_or_update_client(payload: dict, db: Session, user):
-    client_bundle_hash = (payload.get("client_bundle_hash") or "").strip()
-    current_bundle = client_bundle_service.ensure_client_bundle()
-    if client_bundle_hash != current_bundle["hash"]:
-        raise HTTPException(status_code=409, detail="Client bundle is outdated")
     machine_fingerprint = (payload.get("machine_fingerprint") or payload.get("machine_key") or "").strip()
     machine_name = (payload.get("machine_name") or machine_fingerprint or "client").strip()
     if not machine_fingerprint:
@@ -67,9 +66,39 @@ def register_client(
     user=Depends(get_api_user),
 ):
     client = _register_or_update_client(payload, db, user)
+    logger.info(
+        "[client-register] accepted client_id=%s user_id=%s machine=%s system=%s cpu=%s ram_mb=%s threads=%s hash_mb=%s syzygy=%s flags=%s",
+        client.id,
+        user.id,
+        client.machine_name,
+        client.system_name,
+        client.cpu_name or "-",
+        client.ram_total_mb,
+        client.max_threads,
+        client.max_hash,
+        client.syzygy_max_pieces,
+        client.cpu_flags or "-",
+    )
     bench = bench_service.build_bench_payload(client.system_name, client.cpu_flags)
     if bench is None:
+        for item in bench_service.describe_bench_compatibility(client.system_name, client.cpu_flags):
+            logger.warning(
+                "[client-register] bench candidate id=%s file=%s compatible=%s reasons=%s flags=%s ref_nps=%s",
+                item["id"],
+                item["file_name"],
+                "yes" if item["compatible"] else "no",
+                ", ".join(item["reasons"]) if item["reasons"] else "-",
+                ",".join(item["required_cpu_flags"]) if item["required_cpu_flags"] else "-",
+                item["reference_nps"],
+            )
         raise HTTPException(status_code=503, detail="No compatible bench artifact was found for this client")
+    logger.info(
+        "[client-register] bench selected id=%s file=%s flags=%s ref_nps=%s",
+        bench["id"],
+        bench["file_name"],
+        ",".join(bench["required_cpu_flags"]) if bench["required_cpu_flags"] else "-",
+        bench["reference_nps"],
+    )
     return {
         "client_id": client.id,
         "heartbeat_interval_seconds": 15,

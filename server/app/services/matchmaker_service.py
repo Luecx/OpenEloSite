@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import math
 import random
 from collections import defaultdict
@@ -31,6 +32,7 @@ ENGINE_2_NOVELTY_WEIGHT = 0.5
 RATING_LIST_CLOSENESS_WEIGHT = 2.0
 RATING_LIST_PAIR_NOVELTY_WEIGHT = 1.4
 _random = random.SystemRandom()
+logger = logging.getLogger("uvicorn.error")
 
 
 def _softmax_weights(scores: list[float]) -> list[float]:
@@ -82,6 +84,112 @@ def _client_can_run_rating_list(client: Client, rating_list: RatingList) -> bool
         rating_list.threads_per_engine <= client.max_threads
         and rating_list.hash_per_engine <= client.max_hash
         and client_supports_syzygy(client.syzygy_max_pieces, rating_list.syzygy_probe_limit)
+    )
+
+
+def _format_client_flags(cpu_flags: list[str] | str | set[str] | None) -> str:
+    parsed = client_repository.parse_cpu_flags(
+        cpu_flags if isinstance(cpu_flags, str) else client_repository.serialize_cpu_flags(cpu_flags)
+    )
+    ordered = [flag for flag in client_repository.RELEVANT_CPU_FLAGS if flag in parsed]
+    return ",".join(ordered) if ordered else "-"
+
+
+def _rating_list_rejection_reasons(client: Client, rating_list: RatingList) -> list[str]:
+    reasons: list[str] = []
+    if rating_list.threads_per_engine > client.max_threads:
+        reasons.append(f"threads {rating_list.threads_per_engine}>{client.max_threads}")
+    if rating_list.hash_per_engine > client.max_hash:
+        reasons.append(f"hash {rating_list.hash_per_engine}>{client.max_hash}")
+    if not client_supports_syzygy(client.syzygy_max_pieces, rating_list.syzygy_probe_limit):
+        reasons.append(f"syzygy {rating_list.syzygy_probe_limit}>{client.syzygy_max_pieces}")
+    return reasons
+
+
+def _log_candidate_preview(client: Client, candidates: list[dict]) -> None:
+    preview_parts = [
+        f"{item['engine_1_version'].display_name} vs {item['engine_2_version'].display_name} @ {item['rating_list'].name} ({item['probability'] * 100:.1f}%)"
+        for item in candidates[:5]
+    ]
+    logger.info(
+        "[matchmaker] client_id=%s machine=%s candidates=%s top=%s",
+        client.id,
+        client.machine_name,
+        len(candidates),
+        " | ".join(preview_parts) if preview_parts else "-",
+    )
+
+
+def _log_no_candidate_debug(db: Session, client: Client, state: dict) -> None:
+    logger.info(
+        "[matchmaker] no assignment for client_id=%s machine=%s user_id=%s system=%s flags=%s threads=%s hash=%s syzygy=%s",
+        client.id,
+        client.machine_name,
+        client.user_id,
+        client.system_name,
+        _format_client_flags(client.cpu_flags),
+        client.max_threads,
+        client.max_hash,
+        client.syzygy_max_pieces,
+    )
+
+    all_rating_lists = catalog_repository.list_rating_lists(db)
+    compatible_rating_list_ids = {item.id for item in state["rating_lists"]}
+    compatible_names = ", ".join(item.name for item in state["rating_lists"]) or "-"
+    logger.info(
+        "[matchmaker] compatible rating lists=%s/%s [%s]",
+        len(state["rating_lists"]),
+        len(all_rating_lists),
+        compatible_names,
+    )
+    for rating_list in all_rating_lists[:20]:
+        if rating_list.id in compatible_rating_list_ids:
+            continue
+        reasons = _rating_list_rejection_reasons(client, rating_list)
+        logger.info(
+            "[matchmaker] rejected rating list %s: %s",
+            rating_list.name,
+            ", ".join(reasons) if reasons else "unknown",
+        )
+
+    raw_versions = engine_repository.list_matchmaker_versions(db)
+    eligible_versions = state["versions"]
+    logger.info(
+        "[matchmaker] eligible versions=%s/%s",
+        len(eligible_versions),
+        len(raw_versions),
+    )
+    for version in raw_versions[:40]:
+        reasons: list[str] = []
+        if engine_repository.pick_compatible_artifact(version, client.system_name, client.cpu_flags) is None:
+            reasons.append("no compatible artifact")
+        if not engine_repository.allows_testing_user(version.engine, client.user_id):
+            reasons.append("tester restriction")
+        allowed_rating_lists = state["allowed_rating_lists_by_version"].get(version.id, set())
+        if not allowed_rating_lists:
+            reasons.append("no compatible rating list")
+        if reasons:
+            logger.info(
+                "[matchmaker] rejected version %s: %s",
+                version.display_name,
+                ", ".join(reasons),
+            )
+
+    possible_selections = 0
+    blocked_selections = 0
+    versions = state["versions"]
+    allowed_by_version = state["allowed_rating_lists_by_version"]
+    for first_index, first_version in enumerate(versions):
+        for second_version in versions[first_index + 1:]:
+            shared_rating_list_ids = allowed_by_version[first_version.id] & allowed_by_version[second_version.id]
+            for rating_list_id in shared_rating_list_ids:
+                possible_selections += 1
+                if assignment_service.has_selection_assignment(rating_list_id, first_version.id, second_version.id):
+                    blocked_selections += 1
+    logger.info(
+        "[matchmaker] possible selections=%s blocked_by_active_assignment=%s",
+        possible_selections,
+        blocked_selections,
     )
 
 
@@ -268,8 +376,7 @@ def _rating_list_candidates(first_version, second_version, shared_rating_list_id
     return candidates, scores
 
 
-def preview_matchups_for_client(db: Session, client: Client, limit: int | None = 20) -> list[dict]:
-    state = _build_matchmaker_state(db, client)
+def _preview_matchups_from_state(state: dict, limit: int | None = 20) -> list[dict]:
     if len(state["versions"]) < 2 or not state["rating_lists"]:
         return []
 
@@ -317,15 +424,24 @@ def preview_matchups_for_client(db: Session, client: Client, limit: int | None =
     return candidates[:max(1, int(limit))]
 
 
+def preview_matchups_for_client(db: Session, client: Client, limit: int | None = 20) -> list[dict]:
+    state = _build_matchmaker_state(db, client)
+    return _preview_matchups_from_state(state, limit=limit)
+
+
 def estimate_assignment_games(client: Client, threads_per_engine: int) -> int:
     concurrency = max(1, client.max_threads // max(1, threads_per_engine))
     return max(MINIMUM_ASSIGNMENT_GAMES, concurrency * DEFAULT_GAMES_PER_CONCURRENCY_SLOT)
 
 
 def assign_next_job(db: Session, client: Client):
-    candidates = preview_matchups_for_client(db, client, limit=None)
+    state = _build_matchmaker_state(db, client)
+    candidates = _preview_matchups_from_state(state, limit=None)
     if not candidates:
+        _log_no_candidate_debug(db, client, state)
         return None
+
+    _log_candidate_preview(client, candidates)
 
     remaining_candidates = list(candidates)
     while remaining_candidates:
@@ -346,6 +462,16 @@ def assign_next_job(db: Session, client: Client):
             seed=seed,
         )
         if assignment is not None:
+            logger.info(
+                "[matchmaker] assigned client_id=%s job_id=%s pairing=%s vs %s rating_list=%s games=%s",
+                client.id,
+                assignment.id,
+                first_version.display_name,
+                second_version.display_name,
+                rating_list.name,
+                num_games,
+            )
             return assignment
         remaining_candidates = [item for item in remaining_candidates if item is not selected]
+    logger.info("[matchmaker] client_id=%s had candidates but all were blocked by active assignments", client.id)
     return None

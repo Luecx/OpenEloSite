@@ -103,13 +103,59 @@ def _parse_size_to_mb(value: str, unit: str) -> int:
 
 
 def _parse_lshw_total_mb(text: str) -> int:
+    current_is_memory_root = False
+    current_is_bank = False
+    memory_root_total_mb = 0
+    bank_total_mb = 0
+
     for line in text.splitlines():
-        stripped = line.strip().lower()
-        if not stripped.startswith("size:"):
+        stripped = line.strip()
+        lowered = stripped.lower()
+        if not stripped:
             continue
-        match = re.search(r"size:\s*([0-9.]+)\s*([kmgt]i?b)", stripped, flags=re.IGNORECASE)
-        if match:
-            return _parse_size_to_mb(match.group(1), match.group(2))
+        if stripped.startswith("*-"):
+            current_is_memory_root = stripped.startswith("*-memory")
+            current_is_bank = stripped.startswith("*-bank")
+            continue
+        if lowered.startswith("description:"):
+            description = lowered.split(":", 1)[1].strip()
+            if "system memory" in description:
+                current_is_memory_root = True
+                current_is_bank = False
+            elif "bank" in description or "memory device" in description or "dimm" in description:
+                current_is_bank = True
+                current_is_memory_root = False
+            continue
+        if not lowered.startswith("size:"):
+            continue
+        match = re.search(r"size:\s*([0-9.]+)\s*([kmgt]i?b)", lowered, flags=re.IGNORECASE)
+        if not match:
+            continue
+        size_mb = _parse_size_to_mb(match.group(1), match.group(2))
+        if size_mb <= 0:
+            continue
+        if current_is_memory_root:
+            memory_root_total_mb = max(memory_root_total_mb, size_mb)
+        elif current_is_bank:
+            bank_total_mb += size_mb
+
+    if memory_root_total_mb > 0:
+        return memory_root_total_mb
+    if bank_total_mb > 0:
+        return bank_total_mb
+    return 0
+
+
+def _read_linux_meminfo_total_mb() -> int:
+    meminfo_path = Path("/proc/meminfo")
+    if not meminfo_path.exists():
+        return 0
+    for line in meminfo_path.read_text(errors="ignore").splitlines():
+        if not line.startswith("MemTotal:"):
+            continue
+        parts = line.split()
+        if len(parts) >= 2 and parts[1].isdigit():
+            return max(0, int(parts[1]) // 1024)
     return 0
 
 
@@ -120,19 +166,10 @@ def detect_ram_total_mb() -> int:
         if total_mb > 0:
             return total_mb
     if system_name == "linux":
+        meminfo_total_mb = _read_linux_meminfo_total_mb()
         lshw_output = _run_command(["lshw", "-class", "memory"])
-        total_mb = _parse_lshw_total_mb(lshw_output)
-        if total_mb > 0:
-            return total_mb
-        meminfo_path = Path("/proc/meminfo")
-        if meminfo_path.exists():
-            for line in meminfo_path.read_text(errors="ignore").splitlines():
-                if not line.startswith("MemTotal:"):
-                    continue
-                parts = line.split()
-                if len(parts) >= 2 and parts[1].isdigit():
-                    return max(0, int(parts[1]) // 1024)
-        return 0
+        lshw_total_mb = _parse_lshw_total_mb(lshw_output)
+        return max(meminfo_total_mb, lshw_total_mb)
     if system_name == "darwin":
         value = _run_command(["sysctl", "-n", "hw.memsize"])
         if value.isdigit():

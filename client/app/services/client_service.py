@@ -10,7 +10,6 @@ from app.services.fastchess_service import ensure_fastchess
 from app.services.hardware_service import RELEVANT_CPU_FLAGS
 from app.services.hardware_service import collect_hardware_snapshot
 from app.services.job_runner import JobRunner
-from app.services.self_update_service import ensure_client_bundle_current
 from app.services.syzygy_service import inspect_syzygy_root
 from app.services.workspace_service import WorkspaceService
 
@@ -54,7 +53,6 @@ class ClientService:
         self.console = ClientConsole()
         self.console.banner("OpenELO Client")
         self.server = ServerClient(server_url, access_key)
-        self.client_bundle_hash = ensure_client_bundle_current(self.server, self.console)
         self.max_threads = int(max_threads)
         self.max_hash = int(max_hash)
         hardware = collect_hardware_snapshot()
@@ -101,7 +99,6 @@ class ClientService:
 
     def register(self) -> int:
         payload = {
-            "client_bundle_hash": self.client_bundle_hash,
             "machine_fingerprint": self.machine_fingerprint,
             "machine_name": self.machine_name,
             "system_name": self.system_name,
@@ -114,13 +111,7 @@ class ClientService:
             "ram_speed_mt_s": self.ram_speed_mt_s,
             "state": "idle",
         }
-        try:
-            response = self.server.post("/api/client/register", payload)
-        except RuntimeError as error:
-            if "Client bundle is outdated" in str(error):
-                self.console.status("INIT", "Server reported an outdated client bundle. Updating ...")
-                self.client_bundle_hash = ensure_client_bundle_current(self.server, self.console)
-            raise
+        response = self.server.post("/api/client/register", payload)
         self.client_id = int(response["client_id"])
         self.heartbeat_interval = self.heartbeat_interval_override or int(response.get("heartbeat_interval_seconds", 15) or 15)
         self.poll_interval = self.poll_interval_override or int(response.get("poll_interval_seconds", 5) or 5)
