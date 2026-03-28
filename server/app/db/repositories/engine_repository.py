@@ -76,8 +76,6 @@ def create_engine(
     for user_id in owner_user_ids:
         if user_id not in normalized_user_ids:
             normalized_user_ids.append(user_id)
-    if not normalized_user_ids:
-        raise ValueError("owner_user_ids darf nicht leer sein")
 
     engine = Engine(
         name=name.strip(),

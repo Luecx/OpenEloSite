@@ -49,23 +49,6 @@ def _manageable_engines_for_user(db: Session, current_user):
     return engine_repository.list_user_engines(db, current_user.id)
 
 
-def _resolve_owner_users(db: Session, raw_value: str, fallback_user) -> list:
-    usernames = [item.strip() for item in raw_value.split(",") if item.strip()]
-    if not usernames:
-        return [fallback_user]
-
-    owners = []
-    seen_ids: set[int] = set()
-    for username in usernames:
-        owner = user_repository.get_user_by_username(db, username)
-        if owner is None:
-            raise ValueError(f"Owner '{username}' nicht gefunden.")
-        if owner.id not in seen_ids:
-            seen_ids.add(owner.id)
-            owners.append(owner)
-    return owners
-
-
 def _parse_required_int(raw_value: str, field_label: str) -> int:
     value = (raw_value or "").strip()
     if not value:
@@ -105,21 +88,15 @@ def create_engine(
     name: str = Form(...),
     description: str = Form(...),
     protocol: str = Form("uci"),
-    owner_usernames: str = Form(""),
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user_required),
 ):
     if not _is_admin(current_user):
         return redirect_to("/owner/engines", "Neue Engines koennen nur Admins anlegen.")
 
-    try:
-        owners = _resolve_owner_users(db, owner_usernames, current_user)
-    except ValueError as error:
-        return redirect_to("/owner/engines", str(error))
-
     engine = engine_repository.create_engine(
         db=db,
-        owner_user_ids=[item.id for item in owners],
+        owner_user_ids=[current_user.id],
         name=name,
         description=description,
         protocol=protocol,
