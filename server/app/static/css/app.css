@@ -1749,6 +1749,14 @@ th {
   overflow: visible;
 }
 
+.engine-versions-layout {
+  align-items: start;
+}
+
+.latest-ratings-card {
+  min-height: 100%;
+}
+
 .table-scroll {
   overflow-x: auto;
 }

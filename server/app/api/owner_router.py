@@ -129,12 +129,24 @@ def engine_detail(engine_id: int, request: Request, db: Session = Depends(get_db
     engine = _editable_engine_for_user(db, engine_id, current_user)
     if engine is None:
         return redirect_to("/owner/engines", "Engine nicht gefunden.")
+    versions = engine_repository.list_versions_for_engine(db, engine.id)
+    latest_version = versions[0] if versions else None
+    latest_version_leaderboard_entries = (
+        sorted(
+            [item for item in latest_version.leaderboard_entries if item.rating_list],
+            key=lambda item: (item.rank_position or 999999, -item.rating),
+        )
+        if latest_version is not None
+        else []
+    )
 
     context = build_context(
         request,
         current_user,
         engine=engine,
-        versions=engine_repository.list_versions_for_engine(db, engine.id),
+        versions=versions,
+        latest_version=latest_version,
+        latest_version_leaderboard_entries=latest_version_leaderboard_entries,
         owners=engine_repository.list_engine_owners(db, engine.id),
         tester_users=engine_repository.list_engine_testers(db, engine.id),
         all_users=user_repository.list_users_for_picker(db),

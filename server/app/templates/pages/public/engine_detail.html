@@ -51,7 +51,7 @@
   </div>
 </section>
 
-<section class="section">
+<section class="section two-column engine-versions-layout">
   <div class="table-card versions-card">
     <div class="section-header">
       <h2>{{ tr("Versionen") }}</h2>
@@ -118,6 +118,34 @@
       </table>
     </div>
   </div>
+
+  <article class="card latest-ratings-card">
+    <div class="section-header compact">
+      <h2>{{ tr("Ratings in Listen") }}</h2>
+      {% if latest_version %}
+      <a class="meta-chip" href="{% if can_edit_engine %}/owner/versions/{{ latest_version.id }}{% else %}/engines/{{ engine.slug }}/versions/{{ latest_version.id }}{% endif %}">{{ latest_version.version_name }}</a>
+      {% endif %}
+    </div>
+    <ul class="simple-list">
+      {% if not latest_version %}
+      <li>{{ tr("Keine Versionen vorhanden.") }}</li>
+      {% else %}
+        {% for entry in latest_version_leaderboard_entries %}
+        <li>
+          <a href="/rating-lists/{{ entry.rating_list.slug }}">{{ entry.rating_list.name }}</a>
+          | {{ tr("Rang") }} {{ entry.rank_position or "-" }}
+          | {{ tr("Rating") }} {{ "%.0f"|format(entry.rating) }}
+          {% if entry.rating_lower is not none and entry.rating_upper is not none %}
+          | {{ tr("95% CI") }} +- {{ "%.1f"|format((entry.rating_upper - entry.rating_lower) / 2.0) }}
+          {% endif %}
+          | {{ tr("Spiele") }} {{ entry.games_played }}
+        </li>
+        {% else %}
+        <li>{{ tr("Diese Version ist noch in keiner oeffentlichen Rating-Liste vertreten.") }}</li>
+        {% endfor %}
+      {% endif %}
+    </ul>
+  </article>
 </section>
 
 {% if can_edit_engine %}

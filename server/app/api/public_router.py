@@ -146,11 +146,22 @@ def engine_detail(slug: str, request: Request, db: Session = Depends(get_db), cu
         raise HTTPException(status_code=404, detail="Engine not found")
     editable_engine = _editable_engine_for_user(db, engine.id, current_user)
     versions = engine_repository.list_public_versions_for_engine(db, engine.id)
+    latest_version = versions[0] if versions else None
+    latest_version_leaderboard_entries = (
+        sorted(
+            [item for item in latest_version.leaderboard_entries if item.rating_list],
+            key=lambda item: (item.rank_position or 999999, -item.rating),
+        )
+        if latest_version is not None
+        else []
+    )
     context = build_context(
         request,
         current_user,
         engine=engine,
         versions=versions,
+        latest_version=latest_version,
+        latest_version_leaderboard_entries=latest_version_leaderboard_entries,
         can_edit_engine=editable_engine is not None,
         owner_users=engine_repository.list_engine_owners(db, engine.id),
         tester_users=engine_repository.list_engine_testers(db, engine.id),
