@@ -12,6 +12,7 @@ from app.db.models.client import Client
 from app.db.models.leaderboard_entry import LeaderboardEntry
 from app.db.models.rating_list import RatingList
 from app.db.repositories import catalog_repository
+from app.db.repositories import client_repository
 from app.db.repositories import engine_repository
 from app.db.repositories import job_repository
 from app.services import assignment_service
