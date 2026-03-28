@@ -175,7 +175,6 @@ def _log_no_candidate_debug(db: Session, client: Client, state: dict) -> None:
             )
 
     possible_selections = 0
-    blocked_selections = 0
     versions = state["versions"]
     allowed_by_version = state["allowed_rating_lists_by_version"]
     for first_index, first_version in enumerate(versions):
@@ -183,12 +182,9 @@ def _log_no_candidate_debug(db: Session, client: Client, state: dict) -> None:
             shared_rating_list_ids = allowed_by_version[first_version.id] & allowed_by_version[second_version.id]
             for rating_list_id in shared_rating_list_ids:
                 possible_selections += 1
-                if assignment_service.has_selection_assignment(rating_list_id, first_version.id, second_version.id):
-                    blocked_selections += 1
     logger.info(
-        "[matchmaker] possible selections=%s blocked_by_active_assignment=%s",
+        "[matchmaker] possible selections=%s",
         possible_selections,
-        blocked_selections,
     )
 
 
@@ -401,8 +397,6 @@ def _preview_matchups_from_state(state: dict, limit: int | None = 20) -> list[di
             rating_list_candidates, rating_list_scores = _rating_list_candidates(first_version, second_version, shared_rating_list_ids, state)
             rating_list_probabilities = _softmax_probabilities(rating_list_scores)
             for rating_list, rating_list_probability in zip(rating_list_candidates, rating_list_probabilities):
-                if assignment_service.has_selection_assignment(rating_list.id, first_version.id, second_version.id):
-                    continue
                 candidates.append(
                     {
                         "engine_1_version": first_version,
@@ -472,5 +466,5 @@ def assign_next_job(db: Session, client: Client):
             )
             return assignment
         remaining_candidates = [item for item in remaining_candidates if item is not selected]
-    logger.info("[matchmaker] client_id=%s had candidates but all were blocked by active assignments", client.id)
+    logger.info("[matchmaker] client_id=%s had candidates but assignment creation returned no result", client.id)
     return None

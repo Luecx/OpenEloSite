@@ -24,16 +24,10 @@ class ActiveAssignment:
     seed: int
     created_at: datetime
 
-    @property
-    def selection_key(self) -> tuple[int, int, int]:
-        first_version_id, second_version_id = sorted((self.engine_version_id, self.opponent_version_id))
-        return self.rating_list_id, first_version_id, second_version_id
-
 
 _lock = threading.Lock()
 _assignments_by_id: dict[str, ActiveAssignment] = {}
 _assignment_ids_by_client: dict[int, str] = {}
-_assignment_ids_by_selection: dict[tuple[int, int, int], str] = {}
 
 
 def _cleanup_expired(now: datetime | None = None) -> None:
@@ -43,7 +37,6 @@ def _cleanup_expired(now: datetime | None = None) -> None:
         assignment = _assignments_by_id.pop(assignment_id, None)
         if assignment is not None:
             _assignment_ids_by_client.pop(assignment.client_id, None)
-            _assignment_ids_by_selection.pop(assignment.selection_key, None)
 
 
 def get_client_assignment(client_id: int) -> ActiveAssignment | None:
@@ -53,15 +46,6 @@ def get_client_assignment(client_id: int) -> ActiveAssignment | None:
         if assignment_id is None:
             return None
         return _assignments_by_id.get(assignment_id)
-
-
-def has_selection_assignment(rating_list_id: int, version_a_id: int, version_b_id: int) -> bool:
-    first_version_id, second_version_id = sorted((version_a_id, version_b_id))
-    selection_key = (rating_list_id, first_version_id, second_version_id)
-    with _lock:
-        _cleanup_expired()
-        assignment_id = _assignment_ids_by_selection.get(selection_key)
-        return assignment_id in _assignments_by_id
 
 
 def create_assignment(
@@ -81,13 +65,6 @@ def create_assignment(
         if existing is not None:
             return existing
 
-        first_version_id, second_version_id = sorted((engine_version_id, opponent_version_id))
-        selection_key = (rating_list_id, first_version_id, second_version_id)
-        existing_selection_id = _assignment_ids_by_selection.get(selection_key)
-        existing_selection_assignment = _assignments_by_id.get(existing_selection_id) if existing_selection_id else None
-        if existing_selection_assignment is not None:
-            return None
-
         assignment = ActiveAssignment(
             id=secrets.token_urlsafe(18),
             client_id=client.id,
@@ -103,7 +80,6 @@ def create_assignment(
         )
         _assignments_by_id[assignment.id] = assignment
         _assignment_ids_by_client[assignment.client_id] = assignment.id
-        _assignment_ids_by_selection[selection_key] = assignment.id
         return assignment
 
 
@@ -117,5 +93,4 @@ def consume_assignment(assignment_id: str, client_id: int, user_id: int) -> Acti
             return None
         _assignments_by_id.pop(assignment_id, None)
         _assignment_ids_by_client.pop(client_id, None)
-        _assignment_ids_by_selection.pop(assignment.selection_key, None)
         return assignment
