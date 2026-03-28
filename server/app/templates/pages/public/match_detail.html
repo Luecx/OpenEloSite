@@ -135,13 +135,9 @@
                   <div class="cell-stack">
                     <span>{{ job.result_text or job.status }}</span>
                     {% if job.is_poor %}
-                      <span class="status-poor">{{ tr("Schwacher Job / ignoriert") }}</span>
-                      {% if job.poor_p_value is not none %}
-                        <span class="muted">p={{ "%.1e"|format(job.poor_p_value) }}</span>
-                      {% endif %}
-                      {% if job.poor_reason %}
-                        <span class="muted">{{ job.poor_reason }}</span>
-                      {% endif %}
+                      <span class="status-poor">
+                        {{ tr("Schwacher Job / ignoriert") }}{% if job.poor_p_value is not none %} (p={{ "%.1e"|format(job.poor_p_value) }}){% endif %}
+                      </span>
                     {% endif %}
                   </div>
                 {% endif %}
