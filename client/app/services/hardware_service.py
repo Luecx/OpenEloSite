@@ -104,6 +104,60 @@ def detect_cpu_name() -> str:
     return platform.processor() or platform.machine() or "unknown cpu"
 
 
+def _linux_cpuinfo_int(target_key: str) -> int | None:
+    value = _linux_cpuinfo_value(target_key)
+    if not value:
+        return None
+    match = re.search(r"\d+", value)
+    if not match:
+        return None
+    return int(match.group(0))
+
+
+def _is_amd_vendor() -> bool:
+    vendor = _linux_cpuinfo_value("vendor_id").strip().lower()
+    return vendor == "authenticamd"
+
+
+def _is_probable_zen2(cpu_name: str) -> bool:
+    normalized_name = cpu_name.strip().lower()
+    if not normalized_name or "amd" not in normalized_name:
+        return False
+
+    family = _linux_cpuinfo_int("cpu family")
+    model = _linux_cpuinfo_int("model")
+    if _is_amd_vendor() and family == 23 and model is not None:
+        zen2_models = {
+            24,
+            49,
+            68,
+            71,
+            96,
+            104,
+            113,
+            144,
+            160,
+        }
+        if model in zen2_models:
+            return True
+
+    explicit_patterns = (
+        r"ryzen\s+threadripper\s+39\d{2}",
+        r"epyc\s+7\d{2}2",
+        r"ryzen\s+[3579]\s+4\d{3}(?:u|h|hs)?",
+        r"ryzen\s+[3579]\s+(3600|3700|3800|3900|3950)\b",
+        r"ryzen\s+[3579]\s+3\d{3}x\b",
+        r"ryzen\s+9\s+3900xt\b",
+        r"ryzen\s+9\s+3950x\b",
+        r"ryzen\s+7\s+3800xt\b",
+        r"ryzen\s+7\s+3700x\b",
+        r"ryzen\s+5\s+3600xt\b",
+        r"ryzen\s+5\s+3600x\b",
+        r"ryzen\s+5\s+3600\b",
+    )
+    return any(re.search(pattern, normalized_name) for pattern in explicit_patterns)
+
+
 def _parse_size_to_mb(value: str, unit: str) -> int:
     normalized_unit = unit.strip().lower()
     amount = float(value)
@@ -297,7 +351,12 @@ def detect_ram_speed_mt_s() -> int | None:
     return None
 
 
-def collect_cpu_flags() -> list[str]:
+def _parse_feature_tokens(text: str) -> set[str]:
+    normalized = text.replace("\n", " ").replace(",", " ").lower()
+    return {item.strip() for item in normalized.split() if item.strip()}
+
+
+def _collect_detected_cpu_tokens() -> set[str]:
     detected_tokens: set[str] = set()
     cpuinfo_path = Path("/proc/cpuinfo")
     if cpuinfo_path.exists():
@@ -305,14 +364,37 @@ def collect_cpu_flags() -> list[str]:
             if ":" not in line:
                 continue
             key, value = line.split(":", 1)
-            if key.strip().lower() == "flags":
-                detected_tokens = {item.strip().lower() for item in value.split() if item.strip()}
-                break
+            normalized_key = key.strip().lower()
+            if normalized_key == "flags":
+                detected_tokens.update(_parse_feature_tokens(value))
+            elif normalized_key == "features":
+                detected_tokens.update(_parse_feature_tokens(value))
+
+    if detect_system_name() == "linux":
+        lscpu_output = _run_command(["lscpu"])
+        for line in lscpu_output.splitlines():
+            if ":" not in line:
+                continue
+            key, value = line.split(":", 1)
+            normalized_key = key.strip().lower()
+            if normalized_key in {"flags", "features"}:
+                detected_tokens.update(_parse_feature_tokens(value))
 
     if not detected_tokens:
         output = _run_command(["sysctl", "-n", "machdep.cpu.features", "machdep.cpu.leaf7_features"])
-        normalized = output.replace("\n", " ").replace(",", " ").lower()
-        detected_tokens = {item.strip() for item in normalized.split() if item.strip()}
+        detected_tokens = _parse_feature_tokens(output)
+
+    return detected_tokens
+
+
+def _has_avx512_vnni(detected_tokens: set[str]) -> bool:
+    if {"avx512vnni", "avx512_vnni"} & detected_tokens:
+        return True
+    return "vnni" in detected_tokens and "avx512f" in detected_tokens
+
+
+def collect_cpu_flags() -> list[str]:
+    detected_tokens = _collect_detected_cpu_tokens()
 
     relevant_flags: set[str] = set()
     if "sse" in detected_tokens:
@@ -343,7 +425,7 @@ def collect_cpu_flags() -> list[str]:
         relevant_flags.add("avx512dq")
     if "avx512vl" in detected_tokens:
         relevant_flags.add("avx512vl")
-    if {"avx512vnni", "avx512_vnni", "vnni"} & detected_tokens:
+    if _has_avx512_vnni(detected_tokens):
         relevant_flags.add("avx512vnni")
 
     if "avx512f" in relevant_flags:
@@ -367,12 +449,16 @@ def collect_cpu_flags() -> list[str]:
 
 
 def collect_hardware_snapshot() -> dict[str, object]:
+    cpu_name = detect_cpu_name()
+    cpu_flags = collect_cpu_flags()
+    if "bmi2" in cpu_flags and _is_probable_zen2(cpu_name):
+        cpu_flags = [flag for flag in cpu_flags if flag != "bmi2"]
     return {
         "machine_fingerprint": build_machine_fingerprint(),
         "machine_name": build_machine_name(),
         "system_name": detect_system_name(),
-        "cpu_name": detect_cpu_name(),
+        "cpu_name": cpu_name,
         "ram_total_mb": detect_ram_total_mb(),
         "ram_speed_mt_s": detect_ram_speed_mt_s(),
-        "cpu_flags": collect_cpu_flags(),
+        "cpu_flags": cpu_flags,
     }
