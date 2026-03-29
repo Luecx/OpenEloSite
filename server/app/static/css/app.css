@@ -957,6 +957,22 @@ textarea {
   opacity: 1;
 }
 
+.table-checkbox-cell {
+  width: 44px;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.table-checkbox {
+  width: 18px;
+  min-height: 18px;
+  height: 18px;
+  margin: 0;
+  padding: 0;
+  accent-color: var(--accent);
+  vertical-align: middle;
+}
+
 table {
   width: 100%;
   border-collapse: collapse;

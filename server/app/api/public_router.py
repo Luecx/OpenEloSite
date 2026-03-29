@@ -199,6 +199,32 @@ def create_engine_request(
     return redirect_to("/engines", "Engine-Anfrage gesendet.")
 
 
+@router.post("/engines/requests/{request_id}/delete")
+def delete_engine_request(
+    request_id: int,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user_optional),
+):
+    if current_user is None:
+        return redirect_to_error("/auth/login", "Bitte logge dich ein, um eine Engine-Anfrage zu entfernen.")
+    engine_request = engine_request_repository.get_engine_request(db, request_id)
+    if engine_request is None or engine_request.requester_user_id != current_user.id:
+        return redirect_to_error("/engines", "Engine-Anfrage nicht gefunden.")
+    if engine_request.status == engine_request_repository.APPROVED_STATUS:
+        return redirect_to_error("/engines", "Genehmigte Engine-Anfragen koennen nicht entfernt werden.")
+
+    engine_request_repository.delete_engine_request(db, engine_request)
+    audit_service.log_action(
+        db,
+        current_user.id,
+        "engine_request_delete",
+        "engine_request",
+        str(request_id),
+        "Engine-Anfrage entfernt.",
+    )
+    return redirect_to("/engines", "Engine-Anfrage entfernt.")
+
+
 @router.get("/engines/{slug}")
 def engine_detail(slug: str, request: Request, db: Session = Depends(get_db), current_user=Depends(get_current_user_optional)):
     engine = engine_repository.get_public_engine_by_slug(db, slug)

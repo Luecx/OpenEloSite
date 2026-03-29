@@ -95,7 +95,12 @@
                 <h2>{{ item.engine_name }}</h2>
                 <p class="muted">{{ item.protocol|upper }} | {{ tr("Angefragt") }} {{ item.created_at.strftime("%Y-%m-%d %H:%M") }}</p>
               </div>
-              <span class="meta-chip status-{{ item.status }}">{{ request_status_label(item.status) }}</span>
+              <div class="action-cluster">
+                <span class="meta-chip status-{{ item.status }}">{{ request_status_label(item.status) }}</span>
+                <form method="post" action="/engines/requests/{{ item.id }}/delete" class="inline-form" data-confirm="{{ tr('Engine-Anfrage wirklich entfernen?') }}">
+                  <button class="icon-button danger" type="submit" title="{{ tr('Engine-Anfrage entfernen') }}" aria-label="{{ tr('Engine-Anfrage entfernen') }}">×</button>
+                </form>
+              </div>
             </div>
             <p>{{ item.request_text }}</p>
             {% if item.link_url %}

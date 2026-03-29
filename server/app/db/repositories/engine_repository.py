@@ -15,14 +15,18 @@ from app.db.models.engine_artifact import fairness_strength_key
 from app.db.models.engine_artifact import infer_simd_class_from_flags
 from app.db.models.engine_artifact import normalize_avx512_requirement_flags
 from app.db.models.engine_membership import EngineMembership
+from app.db.models.engine_request import EngineRequest
 from app.db.models.engine_tester import EngineTester
 from app.db.models.engine_version import EngineVersion
 from app.db.models.engine_version import compose_version_name
 from app.db.models.engine_version_rating_list import EngineVersionRatingList
 from app.db.models.leaderboard_entry import LeaderboardEntry
+from app.db.models.match import Match
+from app.db.models.match_job import MatchJob
 from app.db.models.rating_list import RatingList
 from app.db.models.user import User
 from app.db.repositories import client_repository
+from app.services import job_pgn_service
 
 
 def slugify(value: str) -> str:
@@ -587,6 +591,54 @@ def delete_artifact(db: Session, artifact: EngineArtifact) -> None:
         )
     )
     _normalize_artifact_priorities(db, remaining)
+
+
+def delete_engine(db: Session, engine: Engine) -> None:
+    version_ids = [item.id for item in engine.versions]
+
+    artifact_paths = [
+        Path(item.file_path)
+        for item in db.scalars(
+            select(EngineArtifact).where(EngineArtifact.engine_version_id.in_(version_ids))
+        )
+    ] if version_ids else []
+
+    matches = list(
+        db.scalars(
+            select(Match).where(
+                Match.engine_version_id.in_(version_ids) | Match.opponent_version_id.in_(version_ids)
+            )
+        )
+    ) if version_ids else []
+    match_ids = [item.id for item in matches]
+    jobs = list(
+        db.scalars(select(MatchJob).where(MatchJob.match_id.in_(match_ids)))
+    ) if match_ids else []
+
+    for job in jobs:
+        job_pgn_service.delete_job_pgn_zip(job)
+        db.delete(job)
+    for match in matches:
+        db.delete(match)
+
+    for item in db.scalars(select(LeaderboardEntry).where(LeaderboardEntry.engine_id == engine.id)):
+        db.delete(item)
+    for item in db.scalars(select(EngineMembership).where(EngineMembership.engine_id == engine.id)):
+        db.delete(item)
+    for item in db.scalars(select(EngineTester).where(EngineTester.engine_id == engine.id)):
+        db.delete(item)
+    for item in db.scalars(select(EngineRequest).where(EngineRequest.engine_id == engine.id)):
+        item.engine_id = None
+
+    for item in db.scalars(select(EngineArtifact).where(EngineArtifact.engine_version_id.in_(version_ids))):
+        db.delete(item)
+
+    db.delete(engine)
+    db.commit()
+
+    for artifact_path in artifact_paths:
+        if artifact_path.exists():
+            artifact_path.unlink(missing_ok=True)
 
 
 def pick_compatible_artifact(version: EngineVersion | None, system_name: str, cpu_flags: list[str] | str | set[str] | None) -> EngineArtifact | None:

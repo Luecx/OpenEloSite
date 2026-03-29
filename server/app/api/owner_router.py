@@ -13,6 +13,7 @@ from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
 from app.api.http import redirect_to
+from app.api.http import redirect_to_error
 from app.api.templates import templates
 from app.db.models.engine_artifact import build_required_cpu_flags
 from app.db.repositories import catalog_repository
@@ -171,6 +172,24 @@ def engine_update(
     engine_repository.update_engine(db, engine, description, protocol)
     audit_service.log_action(db, current_user.id, "engine_update", "engine", str(engine.id), "Engine aktualisiert.")
     return redirect_to(f"/owner/engines/{engine.id}", "Engine gespeichert.")
+
+
+@router.post("/engines/{engine_id}/delete")
+def delete_engine(
+    engine_id: int,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user_required),
+):
+    if not _is_admin(current_user):
+        return redirect_to_error(f"/owner/engines/{engine_id}", "Nur Admins koennen Engines entfernen.")
+    engine = engine_repository.get_engine(db, engine_id)
+    if engine is None:
+        return redirect_to_error("/owner/engines", "Engine nicht gefunden.")
+
+    engine_name = engine.name
+    engine_repository.delete_engine(db, engine)
+    audit_service.log_action(db, current_user.id, "engine_delete", "engine", str(engine_id), f"Engine {engine_name} entfernt.")
+    return redirect_to("/engines", "Engine entfernt.")
 
 
 @router.post("/engines/{engine_id}/owners")

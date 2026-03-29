@@ -147,3 +147,8 @@ def mark_request_declined(
     db.commit()
     db.refresh(engine_request)
     return engine_request
+
+
+def delete_engine_request(db: Session, engine_request: EngineRequest) -> None:
+    db.delete(engine_request)
+    db.commit()

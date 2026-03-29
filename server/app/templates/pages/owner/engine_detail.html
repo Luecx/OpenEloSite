@@ -35,6 +35,9 @@
                 </label>
                 <div class="button-row">
                   <button class="button" type="submit">{{ tr("Engine speichern") }}</button>
+                  {% if current_user and 'admin' in role_names %}
+                    <button class="button danger" type="submit" formaction="/owner/engines/{{ engine.id }}/delete" formnovalidate onclick="return window.confirm('{{ tr('Engine wirklich entfernen?') }}')">{{ tr("Engine entfernen") }}</button>
+                  {% endif %}
                   <button class="ghost-button" type="button" data-close-inline-editor>{{ tr("Abbrechen") }}</button>
                 </div>
               </form>
