@@ -21,6 +21,10 @@
         <h2>{{ tr("Bench") }}</h2>
         <p class="muted">{{ tr("Referenz-Bench und Bench-Artifacts verwalten.") }}</p>
       </a>
+      <a class="card" href="/admin/engine-requests">
+        <h2>{{ tr("Engine-Anfragen") }}</h2>
+        <p class="muted">{{ tr("Nutzeranfragen pruefen und als Engines uebernehmen.") }}</p>
+      </a>
       <a class="card" href="/users">
         <h2>{{ tr("Users") }}</h2>
         <p class="muted">{{ tr("Rollen, Profile und aktive Nutzerclients.") }}</p>
@@ -51,6 +55,40 @@
         <h2>{{ summary.matches }}</h2>
         <p class="muted">{{ tr("Matches") }}</p>
       </article>
+      <article class="card">
+        <h2>{{ pending_engine_request_count }}</h2>
+        <p class="muted">{{ tr("Offene Engine-Anfragen") }}</p>
+      </article>
+    </div>
+    <div class="section-header compact section-header-spaced">
+      <h2>{{ tr("Offene Engine-Anfragen") }}</h2>
+      <a class="ghost-button link-button" href="/admin/engine-requests">{{ tr("Alle anzeigen") }}</a>
+    </div>
+    <div class="table-card">
+      <table>
+        <thead>
+          <tr>
+            <th>{{ tr("Name") }}</th>
+            <th>{{ tr("Anfragender Nutzer") }}</th>
+            <th>{{ tr("Protokoll") }}</th>
+            <th>{{ tr("Angefragt") }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in pending_engine_requests %}
+            <tr class="clickable-row" data-href="/admin/engine-requests">
+              <td>{{ item.engine_name }}</td>
+              <td><a href="/users/{{ item.requester.id }}">{{ item.requester.display_name }}</a></td>
+              <td>{{ item.protocol|upper }}</td>
+              <td>{{ item.created_at.strftime("%Y-%m-%d %H:%M") }}</td>
+            </tr>
+          {% else %}
+            <tr>
+              <td colspan="4">{{ tr("Keine offenen Engine-Anfragen.") }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
     </div>
   </section>
 {% endblock %}

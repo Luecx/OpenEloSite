@@ -61,6 +61,11 @@ def get_public_engine_by_slug(db: Session, slug: str) -> Engine | None:
     return db.scalar(select(Engine).where(Engine.slug == slug))
 
 
+def get_engine_by_slug(db: Session, slug: str) -> Engine | None:
+    normalized_slug = slugify(slug)
+    return db.scalar(select(Engine).where(Engine.slug == normalized_slug))
+
+
 def get_engine_for_user(db: Session, engine_id: int, user_id: int) -> Engine | None:
     return db.scalar(
         select(Engine)

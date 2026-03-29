@@ -14,13 +14,15 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.api.http import redirect_to
+from app.api.http import redirect_to_error
 from app.api.templates import templates
 from app.db.models.audit_log import AuditLog
 from app.db.models.engine_artifact import build_required_cpu_flags
 from app.db.repositories import catalog_repository
 from app.db.repositories import client_repository
-from app.db.repositories import job_repository
 from app.db.repositories import engine_repository
+from app.db.repositories import engine_request_repository
+from app.db.repositories import job_repository
 from app.db.repositories import user_repository
 from app.db.session import get_db
 from app.security.current_user import require_role
@@ -75,9 +77,107 @@ def admin_home(request: Request, db: Session = Depends(get_db), current_user=Dep
         request,
         current_user,
         summary=get_summary(db),
+        pending_engine_requests=engine_request_repository.list_pending_requests(db, limit=5),
+        pending_engine_request_count=engine_request_repository.count_pending_requests(db),
         page_title="Admin",
     )
     return templates.TemplateResponse("pages/admin/index.html", context)
+
+
+@router.get("/engine-requests")
+def engine_requests_page(
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user=Depends(require_role(ADMIN_ROLE)),
+):
+    context = build_context(
+        request,
+        current_user,
+        pending_requests=engine_request_repository.list_pending_requests(db),
+        recent_requests=engine_request_repository.list_recent_requests(db),
+        page_title="Engine-Anfragen",
+    )
+    return templates.TemplateResponse("pages/admin/engine_requests.html", context)
+
+
+@router.post("/engine-requests/{request_id}/approve")
+def approve_engine_request(
+    request_id: int,
+    admin_message: str = Form(""),
+    db: Session = Depends(get_db),
+    current_user=Depends(require_role(ADMIN_ROLE)),
+):
+    engine_request = engine_request_repository.get_engine_request(db, request_id)
+    if engine_request is None:
+        return redirect_to_error("/admin/engine-requests", "Engine-Anfrage nicht gefunden.")
+    if engine_request.status != engine_request_repository.PENDING_STATUS:
+        return redirect_to_error("/admin/engine-requests", "Diese Engine-Anfrage wurde bereits bearbeitet.")
+
+    engine = engine_repository.get_engine_by_slug(db, engine_request.engine_slug)
+    if engine is None:
+        description = engine_request.request_text
+        if engine_request.link_url:
+            description = f"{description}\n\nLink: {engine_request.link_url}"
+        engine = engine_repository.create_engine(
+            db=db,
+            owner_user_ids=[engine_request.requester_user_id],
+            name=engine_request.engine_name,
+            description=description,
+            protocol=engine_request.protocol,
+        )
+    else:
+        engine_repository.add_owner(db, engine, engine_request.requester_user_id)
+
+    engine_request_repository.mark_request_approved(
+        db,
+        engine_request,
+        engine,
+        current_user.id,
+        admin_message,
+    )
+    audit_service.log_action(
+        db,
+        current_user.id,
+        "engine_request_approve",
+        "engine_request",
+        str(engine_request.id),
+        "Engine-Anfrage genehmigt.",
+    )
+    return redirect_to("/admin/engine-requests", "Engine-Anfrage genehmigt.")
+
+
+@router.post("/engine-requests/{request_id}/decline")
+def decline_engine_request(
+    request_id: int,
+    admin_message: str = Form(""),
+    db: Session = Depends(get_db),
+    current_user=Depends(require_role(ADMIN_ROLE)),
+):
+    engine_request = engine_request_repository.get_engine_request(db, request_id)
+    if engine_request is None:
+        return redirect_to_error("/admin/engine-requests", "Engine-Anfrage nicht gefunden.")
+    if engine_request.status != engine_request_repository.PENDING_STATUS:
+        return redirect_to_error("/admin/engine-requests", "Diese Engine-Anfrage wurde bereits bearbeitet.")
+
+    normalized_message = (admin_message or "").strip()
+    if not normalized_message:
+        return redirect_to_error("/admin/engine-requests", "Bitte gib eine Nachricht fuer die Ablehnung an.")
+
+    engine_request_repository.mark_request_declined(
+        db,
+        engine_request,
+        current_user.id,
+        normalized_message,
+    )
+    audit_service.log_action(
+        db,
+        current_user.id,
+        "engine_request_decline",
+        "engine_request",
+        str(engine_request.id),
+        "Engine-Anfrage abgelehnt.",
+    )
+    return redirect_to("/admin/engine-requests", "Engine-Anfrage abgelehnt.")
 
 
 @router.get("/users")

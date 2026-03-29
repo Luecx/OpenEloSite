@@ -1,6 +1,10 @@
 {% extends "base.html" %}
 
 {% block content %}
+  {% macro request_status_label(status) %}
+    {% if status == "approved" %}{{ tr("Genehmigt") }}{% elif status == "declined" %}{{ tr("Abgelehnt") }}{% else %}{{ tr("Ausstehend") }}{% endif %}
+  {% endmacro %}
+
   {% macro engine_card(engine) %}
     <article class="engine-card">
       <div class="engine-card-head">
@@ -20,23 +24,43 @@
         <h1>{{ tr("Engine-Liste") }}</h1>
         <p class="muted">{{ tr("Kompakte Uebersicht mit deinen Engines zuerst und einem direkten Einstieg fuer neue Engines.") }}</p>
       </div>
-      {% if can_create_engine %}
-        <details class="inline-editor">
-          <summary class="button secondary" role="button">{{ tr("Engine hinzufuegen") }}</summary>
-          <form method="post" action="/owner/engines" class="inline-editor-panel engine-create-panel">
-            <label><span>{{ tr("Name") }}</span><input type="text" name="name" required /></label>
-            <label><span>{{ tr("Beschreibung") }}</span><textarea name="description" required></textarea></label>
-            <label>
-              <span>{{ tr("Protokoll") }}</span>
-              <select name="protocol">
-                <option value="uci">UCI</option>
-                <option value="xboard">XBoard</option>
-              </select>
-            </label>
-            <button class="button" type="submit">{{ tr("Erstellen") }}</button>
-          </form>
-        </details>
-      {% endif %}
+      <div class="action-cluster">
+        {% if can_create_engine %}
+          <details class="inline-editor">
+            <summary class="button secondary" role="button">{{ tr("Engine hinzufuegen") }}</summary>
+            <form method="post" action="/owner/engines" class="inline-editor-panel engine-create-panel">
+              <label><span>{{ tr("Name") }}</span><input type="text" name="name" required /></label>
+              <label><span>{{ tr("Beschreibung") }}</span><textarea name="description" required></textarea></label>
+              <label>
+                <span>{{ tr("Protokoll") }}</span>
+                <select name="protocol">
+                  <option value="uci">UCI</option>
+                  <option value="xboard">XBoard</option>
+                </select>
+              </label>
+              <button class="button" type="submit">{{ tr("Erstellen") }}</button>
+            </form>
+          </details>
+        {% endif %}
+        {% if can_request_engine %}
+          <details class="inline-editor">
+            <summary class="button secondary" role="button">{{ tr("Engine anfragen") }}</summary>
+            <form method="post" action="/engines/requests" class="inline-editor-panel engine-create-panel">
+              <label><span>{{ tr("Name") }}</span><input type="text" name="engine_name" required /></label>
+              <label>
+                <span>{{ tr("Protokoll") }}</span>
+                <select name="protocol">
+                  <option value="uci">UCI</option>
+                  <option value="xboard">XBoard</option>
+                </select>
+              </label>
+              <label><span>{{ tr("Beschreibung") }}</span><textarea name="request_text" required></textarea></label>
+              <label><span>{{ tr("Optionaler Link") }}</span><input type="url" name="link_url" placeholder="https://github.com/..." /></label>
+              <button class="button" type="submit">{{ tr("Anfrage senden") }}</button>
+            </form>
+          </details>
+        {% endif %}
+      </div>
     </div>
     <form method="get" action="/engines" class="filter-bar">
       <input type="text" name="q" value="{{ q }}" placeholder="{{ tr('Engine-Name suchen') }}" />
@@ -55,6 +79,35 @@
       <div class="engine-list">
         {% for engine in my_engines %}
           {{ engine_card(engine) }}
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    {% if my_engine_requests %}
+      <div class="section-header compact {% if my_engines %}section-header-spaced{% endif %}">
+        <h2>{{ tr("Meine Engine-Anfragen") }}</h2>
+      </div>
+      <div class="card-grid">
+        {% for item in my_engine_requests %}
+          <article class="detail-card">
+            <div class="section-header compact">
+              <div>
+                <h2>{{ item.engine_name }}</h2>
+                <p class="muted">{{ item.protocol|upper }} | {{ tr("Angefragt") }} {{ item.created_at.strftime("%Y-%m-%d %H:%M") }}</p>
+              </div>
+              <span class="meta-chip status-{{ item.status }}">{{ request_status_label(item.status) }}</span>
+            </div>
+            <p>{{ item.request_text }}</p>
+            {% if item.link_url %}
+              <p><a href="{{ item.link_url }}" target="_blank" rel="noreferrer noopener">{{ item.link_url }}</a></p>
+            {% endif %}
+            {% if item.engine %}
+              <p class="muted">{{ tr("Engine") }}: <a href="/engines/{{ item.engine.slug }}">{{ item.engine.name }}</a></p>
+            {% endif %}
+            {% if item.admin_message %}
+              <p class="muted"><strong>{{ tr("Admin-Nachricht") }}:</strong> {{ item.admin_message }}</p>
+            {% endif %}
+          </article>
         {% endfor %}
       </div>
     {% endif %}

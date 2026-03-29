@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+
+{% block content %}
+  {% macro request_status_label(status) %}
+    {% if status == "approved" %}{{ tr("Genehmigt") }}{% elif status == "declined" %}{{ tr("Abgelehnt") }}{% else %}{{ tr("Ausstehend") }}{% endif %}
+  {% endmacro %}
+
+  <section class="section">
+    <div class="section-header">
+      <div>
+        <h1>{{ tr("Engine-Anfragen") }}</h1>
+        <p class="muted">{{ tr("Nutzeranfragen pruefen und als Engines uebernehmen.") }}</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header compact">
+      <h2>{{ tr("Offene Engine-Anfragen") }}</h2>
+    </div>
+    <div class="card-grid">
+      {% for item in pending_requests %}
+        <article class="detail-card">
+          <div class="section-header compact">
+            <div>
+              <h2>{{ item.engine_name }}</h2>
+              <p class="muted">
+                <a href="/users/{{ item.requester.id }}">{{ item.requester.display_name }}</a>
+                | {{ item.protocol|upper }}
+                | {{ tr("Angefragt") }} {{ item.created_at.strftime("%Y-%m-%d %H:%M") }}
+              </p>
+            </div>
+            <span class="meta-chip status-{{ item.status }}">{{ request_status_label(item.status) }}</span>
+          </div>
+          <p>{{ item.request_text }}</p>
+          {% if item.link_url %}
+            <p><a href="{{ item.link_url }}" target="_blank" rel="noreferrer noopener">{{ item.link_url }}</a></p>
+          {% endif %}
+          <form method="post" action="/admin/engine-requests/{{ item.id }}/approve" class="compact-form">
+            <label>
+              <span>{{ tr("Admin-Nachricht") }}</span>
+              <textarea name="admin_message" placeholder="{{ tr('Optional fuer Genehmigung, empfohlen fuer Ablehnung.') }}"></textarea>
+            </label>
+            <div class="button-row">
+              <button class="button" type="submit">{{ tr("Genehmigen") }}</button>
+              <button class="ghost-button danger" type="submit" formaction="/admin/engine-requests/{{ item.id }}/decline">{{ tr("Ablehnen") }}</button>
+            </div>
+          </form>
+        </article>
+      {% else %}
+        <article class="detail-card">
+          <p>{{ tr("Keine offenen Engine-Anfragen.") }}</p>
+        </article>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header compact">
+      <h2>{{ tr("Neueste Engine-Anfragen") }}</h2>
+    </div>
+    <div class="table-card">
+      <table>
+        <thead>
+          <tr>
+            <th>{{ tr("Name") }}</th>
+            <th>{{ tr("Anfragender Nutzer") }}</th>
+            <th>{{ tr("Status") }}</th>
+            <th>{{ tr("Engine") }}</th>
+            <th>{{ tr("Geprueft") }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in recent_requests %}
+            <tr>
+              <td>{{ item.engine_name }}</td>
+              <td><a href="/users/{{ item.requester.id }}">{{ item.requester.display_name }}</a></td>
+              <td>{{ request_status_label(item.status) }}</td>
+              <td>
+                {% if item.engine %}
+                  <a href="/engines/{{ item.engine.slug }}">{{ item.engine.name }}</a>
+                {% else %}
+                  -
+                {% endif %}
+              </td>
+              <td>{{ item.reviewed_at.strftime("%Y-%m-%d %H:%M") if item.reviewed_at else "-" }}</td>
+            </tr>
+          {% else %}
+            <tr>
+              <td colspan="5">{{ tr("Keine Engine-Anfragen vorhanden.") }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+{% endblock %}

@@ -6,21 +6,26 @@ from pathlib import Path
 from fastapi import APIRouter
 from fastapi import Depends
 from fastapi import HTTPException
+from fastapi import Form
 from fastapi import Request
 from fastapi.responses import FileResponse
 from fastapi.responses import RedirectResponse
 from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
+from app.api.http import redirect_to
+from app.api.http import redirect_to_error
 from app.api.templates import templates
 from app.db.repositories import catalog_repository
 from app.db.repositories import client_repository
 from app.db.repositories import engine_repository
+from app.db.repositories import engine_request_repository
 from app.db.repositories import job_repository
 from app.db.repositories import user_repository
 from app.db.session import get_db
 from app.security.current_user import get_current_user_optional
 from app.security.role_names import ADMIN_ROLE
+from app.services import audit_service
 from app.services.dashboard_service import get_summary
 from app.services.bayeselo_service import summarize_match
 from app.services.job_pgn_service import build_annotated_match_pgn_text
@@ -121,22 +126,73 @@ def engines(
 ):
     filtered_engines = engine_repository.list_public_engines(db, q=q, protocol=protocol)
     my_engines: list = []
+    my_engine_requests: list = []
     all_engines = filtered_engines
     if current_user is not None:
         assigned_engine_ids = {item.id for item in engine_repository.list_user_engines(db, current_user.id)}
         my_engines = [item for item in filtered_engines if item.id in assigned_engine_ids]
+        my_engine_requests = engine_request_repository.list_requests_for_user(db, current_user.id)
     context = build_context(
         request,
         current_user,
         engines=filtered_engines,
         my_engines=my_engines,
+        my_engine_requests=my_engine_requests,
         all_engines=all_engines,
         can_create_engine=bool(current_user and user_repository.has_role(current_user, ADMIN_ROLE)),
+        can_request_engine=bool(current_user and not user_repository.has_role(current_user, ADMIN_ROLE)),
         q=q,
         protocol=protocol,
         page_title="Engine-Liste",
     )
     return templates.TemplateResponse("pages/public/engines.html", context)
+
+
+@router.post("/engines/requests")
+def create_engine_request(
+    engine_name: str = Form(...),
+    protocol: str = Form("uci"),
+    request_text: str = Form(...),
+    link_url: str = Form(""),
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user_optional),
+):
+    if current_user is None:
+        return redirect_to_error("/auth/login", "Bitte logge dich ein, um eine Engine anzufragen.")
+    if user_repository.has_role(current_user, ADMIN_ROLE):
+        return redirect_to_error("/engines", "Admins koennen Engines direkt anlegen.")
+
+    normalized_name = (engine_name or "").strip()
+    normalized_text = (request_text or "").strip()
+    if not normalized_name:
+        return redirect_to_error("/engines", "Der Engine-Name ist erforderlich.")
+    if not normalized_text:
+        return redirect_to_error("/engines", "Ein Beschreibungstext ist erforderlich.")
+
+    requested_slug = engine_repository.slugify(normalized_name)
+    if engine_repository.get_engine_by_slug(db, requested_slug) is not None:
+        return redirect_to_error("/engines", "Diese Engine existiert bereits.")
+    if engine_request_repository.get_pending_request_by_slug(db, requested_slug) is not None:
+        return redirect_to_error("/engines", "Es gibt bereits eine offene Anfrage fuer diese Engine.")
+
+    engine_request = engine_request_repository.create_engine_request(
+        db=db,
+        requester_user_id=current_user.id,
+        engine_name=normalized_name,
+        engine_slug=requested_slug,
+        protocol=protocol,
+        request_text=normalized_text,
+        link_url=link_url,
+    )
+    audit_service.log_action(
+        db,
+        current_user.id,
+        "engine_request_create",
+        "engine_request",
+        str(engine_request.id),
+        "Engine-Anfrage erstellt.",
+    )
+    return redirect_to("/engines", "Engine-Anfrage gesendet.")
 
 
 @router.get("/engines/{slug}")

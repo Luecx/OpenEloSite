@@ -309,6 +309,21 @@ code {
   color: var(--surface-strong);
 }
 
+.meta-chip.status-pending {
+  background: var(--info);
+  color: var(--surface-strong);
+}
+
+.meta-chip.status-approved {
+  background: var(--success);
+  color: var(--surface-strong);
+}
+
+.meta-chip.status-declined {
+  background: var(--danger-soft);
+  color: var(--surface-strong);
+}
+
 .main-content {
   padding: 26px 0 0;
 }

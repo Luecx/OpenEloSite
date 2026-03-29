@@ -4,6 +4,7 @@ from app.db.models.client_token import ClientToken
 from app.db.models.engine import Engine
 from app.db.models.engine_artifact import EngineArtifact
 from app.db.models.engine_membership import EngineMembership
+from app.db.models.engine_request import EngineRequest
 from app.db.models.engine_tester import EngineTester
 from app.db.models.engine_version import EngineVersion
 from app.db.models.engine_version_rating_list import EngineVersionRatingList
