@@ -131,7 +131,11 @@ def engines(
     if current_user is not None:
         assigned_engine_ids = {item.id for item in engine_repository.list_user_engines(db, current_user.id)}
         my_engines = [item for item in filtered_engines if item.id in assigned_engine_ids]
-        my_engine_requests = engine_request_repository.list_requests_for_user(db, current_user.id)
+        my_engine_requests = [
+            item
+            for item in engine_request_repository.list_requests_for_user(db, current_user.id)
+            if item.status != engine_request_repository.APPROVED_STATUS
+        ]
     context = build_context(
         request,
         current_user,
