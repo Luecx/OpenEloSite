@@ -11,6 +11,7 @@ from app.services.storage_service import sha256_for_file
 
 BENCH_ROOT = Path(__file__).resolve().parents[2] / "data" / "bench"
 BENCH_MANIFEST_PATH = BENCH_ROOT / "manifest.json"
+DEFAULT_BENCH_COMMAND_ARGS = "bench exit"
 
 
 def _safe_id(value: str) -> str:
@@ -33,6 +34,11 @@ def _artifact_id(relative_path: str, manifest_id: str | None = None) -> str:
         return _safe_id(manifest_id)
     digest = sha256(relative_path.encode("utf-8")).hexdigest()[:12]
     return _safe_id(f"bench-{digest}")
+
+
+def _normalize_command_args(value: str | None) -> str:
+    command_args = (value or "").strip()
+    return command_args or DEFAULT_BENCH_COMMAND_ARGS
 
 
 def _default_manifest() -> dict:
@@ -114,6 +120,7 @@ def list_bench_artifacts() -> list[dict]:
                 "required_cpu_flags": required_cpu_flags,
                 "priority": max(1, int(entry.get("priority") or 0)),
                 "reference_nps": max(0, int(entry.get("reference_nps") or 0)),
+                "command_args": _normalize_command_args(entry.get("command_args") or entry.get("bench_args")),
                 "content_hash": sha256_for_file(file_path),
             }
         )
@@ -135,6 +142,7 @@ def create_bench_artifact(
     system_name: str,
     required_cpu_flags: list[str] | str | None,
     reference_nps: int,
+    command_args: str | None,
 ) -> dict:
     manifest = _load_manifest()
     next_priority = len(manifest["artifacts"]) + 1
@@ -146,6 +154,7 @@ def create_bench_artifact(
         "system_name": (system_name or "").strip().lower(),
         "required_cpu_flags": _normalize_flags(required_cpu_flags),
         "reference_nps": max(0, int(reference_nps)),
+        "command_args": _normalize_command_args(command_args),
         "priority": next_priority,
         "content_hash": content_hash.strip(),
     }
@@ -163,6 +172,7 @@ def update_bench_artifact(
     system_name: str,
     required_cpu_flags: list[str] | str | None,
     reference_nps: int,
+    command_args: str | None,
 ) -> dict | None:
     normalized_id = _safe_id(artifact_id)
     manifest = _load_manifest()
@@ -174,6 +184,7 @@ def update_bench_artifact(
         entry["system_name"] = (system_name or "").strip().lower()
         entry["required_cpu_flags"] = _normalize_flags(required_cpu_flags)
         entry["reference_nps"] = max(0, int(reference_nps))
+        entry["command_args"] = _normalize_command_args(command_args)
         updated = True
         break
     if not updated:
@@ -243,6 +254,7 @@ def describe_bench_compatibility(system_name: str, cpu_flags: list[str] | str | 
                 "system_name": artifact["system_name"],
                 "required_cpu_flags": artifact["required_cpu_flags"],
                 "reference_nps": artifact["reference_nps"],
+                "command_args": artifact["command_args"],
                 "compatible": not reasons,
                 "reasons": reasons,
             }
@@ -286,5 +298,6 @@ def build_bench_payload(system_name: str, cpu_flags: list[str] | str | set[str] 
         "required_cpu_flags": artifact["required_cpu_flags"],
         "priority": artifact["priority"],
         "reference_nps": reference_nps,
+        "command_args": artifact["command_args"],
         "source": f"/api/client/bench/{artifact['id']}",
     }

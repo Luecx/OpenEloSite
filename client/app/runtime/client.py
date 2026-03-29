@@ -127,13 +127,19 @@ class OpenEloClient:
         if not isinstance(bench, dict):
             raise RuntimeError("Server did not provide a bench artifact.")
         bench_path = self.workspace.refresh_bench_artifact(bench, self.server)
-        self.runner.configure_bench(bench_path, int(bench.get("reference_nps", 0) or 0))
+        bench_command_args = str(bench.get("command_args") or "bench exit")
+        self.runner.configure_bench(
+            bench_path,
+            int(bench.get("reference_nps", 0) or 0),
+            bench_command_args,
+        )
         self.state = "idle"
         self.console.section(
             "INIT",
             [
                 ("Download target", self.workspace.bench_dir),
                 ("Ready", bench_path),
+                ("Arguments", bench_command_args),
             ],
             subtitle="Bench Artifact",
         )

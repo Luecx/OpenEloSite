@@ -223,6 +223,7 @@ def create_bench_artifact(
     requires_bmi2: str | None = Form(None),
     required_avx512_flags: list[str] = Form(default=[]),
     reference_nps: int = Form(...),
+    command_args: str = Form("bench exit"),
     upload: UploadFile = File(...),
     db: Session = Depends(get_db),
     current_user=Depends(require_role(ADMIN_ROLE)),
@@ -241,6 +242,7 @@ def create_bench_artifact(
             required_avx512_flags,
         ),
         reference_nps=reference_nps,
+        command_args=command_args,
     )
     audit_service.log_action(db, current_user.id, "bench_artifact_create", "bench", artifact["id"], "Bench-Artifact hochgeladen.")
     return redirect_to("/admin/bench", "Bench-Artifact hochgeladen.")
@@ -255,6 +257,7 @@ def update_bench_artifact(
     requires_bmi2: str | None = Form(None),
     required_avx512_flags: list[str] = Form(default=[]),
     reference_nps: int = Form(...),
+    command_args: str = Form("bench exit"),
     db: Session = Depends(get_db),
     current_user=Depends(require_role(ADMIN_ROLE)),
 ):
@@ -268,6 +271,7 @@ def update_bench_artifact(
             required_avx512_flags,
         ),
         reference_nps,
+        command_args,
     )
     if artifact is None:
         return redirect_to("/admin/bench", "Bench-Artifact nicht gefunden.")

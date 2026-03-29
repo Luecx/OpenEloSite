@@ -91,11 +91,12 @@ def register_client(
             )
         raise HTTPException(status_code=503, detail="No compatible bench artifact was found for this client")
     logger.info(
-        "[client-register] bench selected id=%s file=%s flags=%s ref_nps=%s",
+        "[client-register] bench selected id=%s file=%s flags=%s ref_nps=%s args=%s",
         bench["id"],
         bench["file_name"],
         ",".join(bench["required_cpu_flags"]) if bench["required_cpu_flags"] else "-",
         bench["reference_nps"],
+        bench.get("command_args") or "-",
     )
     return {
         "client_id": client.id,

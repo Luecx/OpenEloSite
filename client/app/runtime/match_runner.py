@@ -48,12 +48,15 @@ class MatchRunner:
         self.syzygy = syzygy
         self.bench_path: Path | None = None
         self.bench_reference_nps: int | None = None
+        self.bench_command_args: tuple[str, ...] = ("bench", "exit")
+        self.bench_command_text = "bench exit"
 
-    def configure_bench(self, bench_path: Path, reference_nps: int) -> None:
+    def configure_bench(self, bench_path: Path, reference_nps: int, command_args: str | None = None) -> None:
         if reference_nps <= 0:
             raise ValueError("bench reference NPS must be greater than 0")
         self.bench_path = bench_path.expanduser().resolve()
         self.bench_reference_nps = int(reference_nps)
+        self.bench_command_text, self.bench_command_args = self._parse_bench_command_args(command_args)
 
     def run(self, job: dict, book_path: Path | None, cpu_flags: set[str], server: ServerClient, system_name: str) -> dict:
         self.workspace.cleanup_for_job()
@@ -70,6 +73,7 @@ class MatchRunner:
             "BENCH",
             [
                 ("Executable", self.bench_path),
+                ("Arguments", self.bench_command_text),
                 ("Measured NPS", bench_result.measured_nps),
                 ("Reference NPS", bench_result.reference_nps),
                 ("TC Factor", f"{bench_result.time_factor:.3f}"),
@@ -248,7 +252,7 @@ class MatchRunner:
             raise RuntimeError(f"Bench executable not found: {self.bench_path}")
 
         process = subprocess.run(
-            [str(self.bench_path), "bench", "exit"],
+            [str(self.bench_path), *self.bench_command_args],
             cwd=self.bench_path.parent,
             capture_output=True,
             text=True,
@@ -258,10 +262,16 @@ class MatchRunner:
         if process.returncode != 0:
             raise RuntimeError(output or f"Bench failed with return code {process.returncode}")
 
-        matches = re.findall(r"OVERALL:\s+\d+\s+nodes\s+(\d+)\s+nps", output, flags=re.IGNORECASE)
+        # Bench output varies a lot; use the last advertised "... nps" value anywhere.
+        matches = re.findall(r"(\d[\d,._]*)\s+nps\b", output, flags=re.IGNORECASE)
         if not matches:
-            raise RuntimeError("Bench output does not contain an OVERALL NPS value.")
-        measured_nps = int(matches[-1])
+            raise RuntimeError("Bench output does not contain an NPS value.")
+        measured_nps = 0
+        for raw_value in reversed(matches):
+            normalized_value = re.sub(r"[^\d]", "", raw_value)
+            if normalized_value:
+                measured_nps = int(normalized_value)
+                break
         if measured_nps <= 0:
             raise RuntimeError("Bench NPS is invalid.")
 
@@ -271,6 +281,16 @@ class MatchRunner:
             reference_nps=self.bench_reference_nps,
             time_factor=max(0.001, factor),
         )
+
+    def _parse_bench_command_args(self, raw_command_args: str | None) -> tuple[str, tuple[str, ...]]:
+        command_text = (raw_command_args or "").strip() or "bench exit"
+        try:
+            parts = tuple(part for part in shlex.split(command_text) if part)
+        except ValueError as exc:
+            raise ValueError(f"bench command arguments are invalid: {exc}") from exc
+        if not parts:
+            raise ValueError("bench command arguments must not be empty")
+        return command_text, parts
 
     def _scaled_time_control(self, job: dict, time_factor: float) -> str:
         base_seconds = float(job.get("time_control_base_seconds", 0) or 0)

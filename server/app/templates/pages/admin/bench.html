@@ -28,6 +28,10 @@
         <span>{{ tr("Reference NPS") }}</span>
         <input type="number" name="reference_nps" min="1" required />
       </label>
+      <label>
+        <span>{{ tr("Command line arguments") }}</span>
+        <input type="text" name="command_args" value="bench exit" placeholder="bench exit" />
+      </label>
       <label><span>{{ tr("Datei") }}</span><input type="file" name="upload" required /></label>
       <div class="stack">
         <span class="field-label">{{ tr("Flags") }}</span>
@@ -107,6 +111,10 @@
           <span>{{ tr("Reference NPS") }}</span>
           <input type="number" name="reference_nps" min="1" value="{{ edit_artifact.reference_nps or '' }}" required />
         </label>
+        <label>
+          <span>{{ tr("Command line arguments") }}</span>
+          <input type="text" name="command_args" value="{{ edit_artifact.command_args or 'bench exit' }}" placeholder="bench exit" />
+        </label>
         <div class="stack">
           <span class="field-label">{{ tr("Flags") }}</span>
           <div class="artifact-flags-grid">
@@ -155,6 +163,7 @@
               <th>{{ tr("Datei") }}</th>
               <th>{{ tr("System") }}</th>
               <th>{{ tr("Reference NPS") }}</th>
+              <th>{{ tr("Command line arguments") }}</th>
               <th>{{ tr("CPU-Flags") }}</th>
               <th>{{ tr("Hash") }}</th>
               <th></th>
@@ -179,6 +188,7 @@
                 <td>{{ artifact.file_name }}</td>
                 <td>{{ artifact.system_name }}</td>
                 <td>{{ artifact.reference_nps }}</td>
+                <td><code>{{ artifact.command_args }}</code></td>
                 <td>{{ artifact.required_cpu_flags|join(", ") if artifact.required_cpu_flags else tr("keine") }}</td>
                 <td><code>{{ artifact.content_hash[:12] }}</code></td>
                 <td>
@@ -192,7 +202,7 @@
               </tr>
             {% else %}
               <tr>
-                <td colspan="7">{{ tr("Keine Bench-Artifacts vorhanden.") }}</td>
+                <td colspan="8">{{ tr("Keine Bench-Artifacts vorhanden.") }}</td>
               </tr>
             {% endfor %}
           </tbody>

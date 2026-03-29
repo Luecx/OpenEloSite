@@ -121,6 +121,7 @@ _TRANSLATIONS = {
     "Bench-Artifact bearbeiten": {"en": "Edit bench artifact"},
     "Bench-Artifact entfernen": {"en": "Remove bench artifact"},
     "Bench-Artifacts": {"en": "Bench artifacts"},
+    "Command line arguments": {"en": "Command line arguments"},
     "Keine Bench-Artifacts vorhanden.": {"en": "No bench artifacts available."},
     "Top 20 der wahrscheinlichsten naechsten Matches fuer den ausgewaehlten Nutzer.": {
         "en": "Top 20 most likely next matches for the selected user.",
