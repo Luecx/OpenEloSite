@@ -42,6 +42,7 @@ class OpenEloClient:
         machine_fingerprint: str = "",
         poll_interval_override: int = 0,
         heartbeat_interval_override: int = 0,
+        verbose: bool = False,
     ):
         if max_threads <= 0:
             raise ValueError("threads must be greater than 0")
@@ -60,6 +61,7 @@ class OpenEloClient:
         self.machine_fingerprint = machine_fingerprint.strip() or str(hardware["machine_fingerprint"])
         self.poll_interval_override = max(0, int(poll_interval_override))
         self.heartbeat_interval_override = max(0, int(heartbeat_interval_override))
+        self.verbose = bool(verbose)
         self.poll_interval = 5
         self.heartbeat_interval = 15
         self.state = "starting"
@@ -101,6 +103,7 @@ class OpenEloClient:
             max_threads=self.max_threads,
             console=self.console,
             syzygy=self.syzygy,
+            verbose=self.verbose,
         )
 
     def register(self) -> int:

@@ -38,6 +38,12 @@ def build_parser() -> argparse.ArgumentParser:
         default=0,
         help="Optional heartbeat interval override in seconds",
     )
+    parser.add_argument(
+        "--verbose", "-v",
+        action="store_true",
+        default=False,
+        help="Stream fastchess output to the terminal in real time",
+    )
     return parser
 
 
@@ -54,6 +60,7 @@ def main() -> None:
             machine_fingerprint=args.machine_fingerprint,
             poll_interval_override=args.poll_interval,
             heartbeat_interval_override=args.heartbeat_interval,
+            verbose=args.verbose,
         )
         client.run_forever()
     except (ValueError, RuntimeError) as error:

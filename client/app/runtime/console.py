@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+import threading
+from dataclasses import dataclass, field
 
 
 _SEPARATOR_WIDTH = 60
@@ -15,8 +16,11 @@ def _format_value(value) -> str:
 
 @dataclass(slots=True)
 class Console:
+    _lock: threading.Lock = field(default_factory=threading.Lock)
+
     def _print(self, text: str = "") -> None:
-        print(text, flush=True)
+        with self._lock:
+            print(text, flush=True)
 
     def banner(self, title: str) -> None:
         self._print("=" * _SEPARATOR_WIDTH)
