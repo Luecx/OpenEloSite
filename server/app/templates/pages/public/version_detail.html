@@ -21,35 +21,43 @@
 
   <section class="section two-column">
     <article class="panel-card">
-      <h2>{{ tr("Ratings in Listen") }}</h2>
-      <ul class="simple-list">
-        {% for entry in leaderboard_entries %}
-          <li>
-            <a href="/rating-lists/{{ entry.rating_list.slug }}">{{ entry.rating_list.name }}</a>
-            | {{ tr("Rang") }} {{ entry.rank_position or "-" }}
-            | {{ tr("Rating") }} {{ "%.0f"|format(entry.rating) }}
-            {% if entry.rating_lower is not none and entry.rating_upper is not none %}
-              | {{ tr("95% CI") }} +- {{ "%.1f"|format((entry.rating_upper - entry.rating_lower) / 2.0) }}
-            {% endif %}
-            | {{ tr("Spiele") }} {{ entry.games_played }}
-          </li>
-        {% else %}
-          <li>{{ tr("Diese Version ist noch in keiner oeffentlichen Rating-Liste vertreten.") }}</li>
-        {% endfor %}
-      </ul>
-    </article>
-
-    <article class="panel-card">
       <h2>{{ tr("Present in rating lists") }}</h2>
-      <div class="checklist-grid">
-        {% for item in rating_lists %}
-          <label class="checkbox-row">
-            <input type="checkbox" {% if item.id in allowed_rating_list_ids %}checked{% endif %} disabled />
-            <a href="/rating-lists/{{ item.slug }}">{{ item.name }}</a>
-          </label>
-        {% else %}
-          <p class="muted">{{ tr("Keine Rating-Listen vorhanden.") }}</p>
-        {% endfor %}
+      <div class="table-card inner-table">
+        <table>
+          <thead>
+            <tr>
+              <th></th>
+              <th>{{ tr("Rating-Liste") }}</th>
+              <th>{{ tr("Rang") }}</th>
+              <th>{{ tr("Rating") }}</th>
+              <th>{{ tr("95% CI") }}</th>
+              <th>{{ tr("Spiele") }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in rating_list_rows %}
+              {% set entry = row.entry %}
+              <tr>
+                <td><input type="checkbox" {% if row.allowed %}checked{% endif %} disabled /></td>
+                <td><a href="/rating-lists/{{ row.rating_list.slug }}">{{ row.rating_list.name }}</a></td>
+                <td>{{ entry.rank_position if entry and entry.rank_position is not none else "-" }}</td>
+                <td>{{ "%.0f"|format(entry.rating) if entry else "-" }}</td>
+                <td>
+                  {% if entry and entry.rating_lower is not none and entry.rating_upper is not none %}
+                    +- {{ "%.1f"|format((entry.rating_upper - entry.rating_lower) / 2.0) }}
+                  {% else %}
+                    -
+                  {% endif %}
+                </td>
+                <td>{{ entry.games_played if entry else "-" }}</td>
+              </tr>
+            {% else %}
+              <tr>
+                <td colspan="6">{{ tr("Keine Rating-Listen vorhanden.") }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
       </div>
     </article>
 

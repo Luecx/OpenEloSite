@@ -29,15 +29,42 @@
       <form method="post" action="/owner/versions/{{ version.id }}/rating-lists" class="form-card">
         <h2>{{ tr("Present in rating lists") }}</h2>
         <p class="muted">{{ tr("Der Matchmaker verwendet nur Rating-Listen, die hier fuer diese Version angehakt sind.") }}</p>
-        <div class="checklist-grid">
-          {% for item in rating_lists %}
-            <label class="checkbox-row">
-              <input type="checkbox" name="rating_list_ids" value="{{ item.id }}" {% if item.id in allowed_rating_list_ids %}checked{% endif %} />
-              <span>{{ item.name }}</span>
-            </label>
-          {% else %}
-            <p class="muted">{{ tr("Keine Rating-Listen vorhanden.") }}</p>
-          {% endfor %}
+        <div class="table-card inner-table">
+          <table>
+            <thead>
+              <tr>
+                <th></th>
+                <th>{{ tr("Rating-Liste") }}</th>
+                <th>{{ tr("Rang") }}</th>
+                <th>{{ tr("Rating") }}</th>
+                <th>{{ tr("95% CI") }}</th>
+                <th>{{ tr("Spiele") }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in rating_list_rows %}
+                {% set entry = row.entry %}
+                <tr>
+                  <td><input type="checkbox" name="rating_list_ids" value="{{ row.rating_list.id }}" {% if row.allowed %}checked{% endif %} /></td>
+                  <td><a href="/rating-lists/{{ row.rating_list.slug }}">{{ row.rating_list.name }}</a></td>
+                  <td>{{ entry.rank_position if entry and entry.rank_position is not none else "-" }}</td>
+                  <td>{{ "%.0f"|format(entry.rating) if entry else "-" }}</td>
+                  <td>
+                    {% if entry and entry.rating_lower is not none and entry.rating_upper is not none %}
+                      +- {{ "%.1f"|format((entry.rating_upper - entry.rating_lower) / 2.0) }}
+                    {% else %}
+                      -
+                    {% endif %}
+                  </td>
+                  <td>{{ entry.games_played if entry else "-" }}</td>
+                </tr>
+              {% else %}
+                <tr>
+                  <td colspan="6">{{ tr("Keine Rating-Listen vorhanden.") }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
         </div>
         <div class="button-row">
           <button class="button" type="submit">{{ tr("Speichern") }}</button>

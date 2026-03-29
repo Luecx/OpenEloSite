@@ -436,6 +436,23 @@ def list_rating_lists_for_version(db: Session, version_id: int) -> list[RatingLi
     )
 
 
+def build_rating_list_rows(version: EngineVersion, rating_lists: list[RatingList]) -> list[dict]:
+    allowed_rating_list_ids = {item.rating_list_id for item in version.rating_list_links}
+    leaderboard_by_rating_list_id = {
+        entry.rating_list_id: entry
+        for entry in version.leaderboard_entries
+        if entry.rating_list is not None
+    }
+    return [
+        {
+            "rating_list": item,
+            "allowed": item.id in allowed_rating_list_ids,
+            "entry": leaderboard_by_rating_list_id.get(item.id),
+        }
+        for item in rating_lists
+    ]
+
+
 def list_versions_for_rating_list(db: Session, rating_list_id: int) -> list[EngineVersion]:
     versions = list(
         db.scalars(

@@ -186,19 +186,22 @@ def version_detail(
     if engine is None or version is None or version.engine_id != engine.id:
         raise HTTPException(status_code=404, detail="Version not found")
 
+    rating_lists = catalog_repository.list_rating_lists(db)
+
     context = build_context(
         request,
         current_user,
         engine=engine,
         version=version,
         can_edit_engine=_editable_engine_for_user(db, engine.id, current_user) is not None,
-        rating_lists=catalog_repository.list_rating_lists(db),
+        rating_lists=rating_lists,
         allowed_rating_lists=engine_repository.list_rating_lists_for_version(db, version.id),
         allowed_rating_list_ids=[item.id for item in engine_repository.list_rating_lists_for_version(db, version.id)],
         leaderboard_entries=sorted(
             [item for item in version.leaderboard_entries if item.rating_list],
             key=lambda item: (item.rank_position or 999999, -item.rating),
         ),
+        rating_list_rows=engine_repository.build_rating_list_rows(version, rating_lists),
         matches=job_repository.list_matches_for_version(
             db,
             version_id=version.id,

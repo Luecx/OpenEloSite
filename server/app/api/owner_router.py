@@ -295,14 +295,17 @@ def version_detail(
     if engine is None:
         return redirect_to("/owner/engines", "Kein Zugriff auf diese Version.")
 
+    rating_lists = catalog_repository.list_rating_lists(db)
+
     context = build_context(
         request,
         current_user,
         engine=engine,
         version=version,
-        rating_lists=catalog_repository.list_rating_lists(db),
+        rating_lists=rating_lists,
         allowed_rating_lists=engine_repository.list_rating_lists_for_version(db, version.id),
         allowed_rating_list_ids=[item.id for item in engine_repository.list_rating_lists_for_version(db, version.id)],
+        rating_list_rows=engine_repository.build_rating_list_rows(version, rating_lists),
         artifacts=engine_repository.list_artifacts_for_version(db, version.id),
         matches=job_repository.list_matches_for_version(
             db,
