@@ -40,12 +40,14 @@ class MatchRunner:
         max_threads: int,
         console: Console,
         syzygy: SyzygyLayout,
+        verbose: bool = False,
     ):
         self.workspace = workspace
         self.fastchess_path = fastchess_path.expanduser().resolve()
         self.max_threads = max_threads
         self.console = console
         self.syzygy = syzygy
+        self.verbose = verbose
         self.bench_path: Path | None = None
         self.bench_reference_nps: int | None = None
         self.bench_command_args: tuple[str, ...] = ("bench", "exit")
@@ -127,13 +129,12 @@ class MatchRunner:
         )
 
         self.console.command(self._format_command_lines(command))
-        process = subprocess.run(command, cwd=self.workspace.root, capture_output=True, text=True, check=False)
-        log_text = "\n".join(part for part in [process.stdout.strip(), process.stderr.strip()] if part).strip()
+        _output_lines, log_text, returncode = self._run_fastchess_process(command, self.workspace.root)
         log_path.write_text(log_text)
         runtime_seconds = max(1, int(time.monotonic() - start_time))
 
-        if process.returncode != 0:
-            raise RuntimeError(log_text or f"fast-chess exited with return code {process.returncode}")
+        if returncode != 0:
+            raise RuntimeError(log_text or f"fast-chess exited with return code {returncode}")
 
         if not pgn_path.exists():
             raise RuntimeError("fast-chess did not produce a PGN file.")
@@ -281,6 +282,36 @@ class MatchRunner:
             reference_nps=self.bench_reference_nps,
             time_factor=max(0.001, factor),
         )
+
+    def _run_fastchess_process(
+        self, command: list[str], cwd: Path,
+    ) -> tuple[list[str], str, int]:
+        """Run fastchess via Popen, optionally streaming output.
+
+        Returns (output_lines, log_text, returncode).
+        """
+        output_lines: list[str] = []
+        with subprocess.Popen(
+            command,
+            cwd=cwd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            errors="replace",
+        ) as process:
+            assert process.stdout is not None
+            try:
+                for line in process.stdout:
+                    stripped = line.rstrip("\r\n")
+                    output_lines.append(stripped)
+                    if self.verbose:
+                        self.console.status("FC", stripped)
+            except (KeyboardInterrupt, OSError):
+                process.kill()
+                process.wait()
+                raise
+        log_text = "\n".join(output_lines).strip()
+        return output_lines, log_text, process.returncode
 
     def _parse_bench_command_args(self, raw_command_args: str | None) -> tuple[str, tuple[str, ...]]:
         command_text = (raw_command_args or "").strip() or "bench exit"
