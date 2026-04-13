@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>{{ page_title or settings.app_name }} | {{ settings.app_name }}</title>
+    <title>{{ tr(page_title) if page_title else settings.app_name }} | {{ settings.app_name }}</title>
     <script>
       (function () {
         var match = document.cookie.match(/(?:^|; )openeelo_theme=([^;]+)/);

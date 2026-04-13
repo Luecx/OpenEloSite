@@ -27,11 +27,11 @@
         <section>
           <h2>{{ tr("Kontakt") }}</h2>
           <p>
-            E-Mail:
+            {{ tr("E-Mail") }}:
             <a href="mailto:{{ settings.legal_notice_email }}">{{ settings.legal_notice_email }}</a>
           </p>
           <p>
-            Telefon:
+            {{ tr("Telefon") }}:
             <a href="tel:{{ settings.legal_notice_phone | replace(' ', '') }}">{{ settings.legal_notice_phone }}</a>
           </p>
         </section>

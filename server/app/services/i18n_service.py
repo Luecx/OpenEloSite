@@ -73,12 +73,80 @@ _TRANSLATIONS = {
     "Rechtliches": {"en": "Legal"},
     "Impressum": {"en": "Legal Notice"},
     "Datenschutz": {"en": "Privacy"},
+    "Datenschutzerklaerung": {"en": "Privacy Policy"},
+    "Telefon": {"en": "Phone"},
     "Kontakt- und Anbieterkennzeichnung fuer dieses Angebot.": {
         "en": "Provider and contact information for this service.",
+    },
+    "Uebersicht ueber die Verarbeitung personenbezogener Daten in diesem Angebot.": {
+        "en": "Overview of the processing of personal data in this service.",
     },
     "Angaben gemaess § 5 DDG": {"en": "Information pursuant to Section 5 DDG"},
     "Anbieter": {"en": "Provider"},
     "Kontakt": {"en": "Contact"},
+    "Verantwortlicher": {"en": "Controller"},
+    "Zugriff auf die Website": {"en": "Website Access"},
+    "Beim Aufruf der Website werden technisch notwendige Verbindungsdaten verarbeitet, insbesondere IP-Adresse, Datum und Uhrzeit des Abrufs, angeforderte URL, User-Agent sowie weitere Daten, die fuer die Auslieferung, Stabilitaet und Sicherheit des Angebots erforderlich sind.": {
+        "en": "When visiting the website, technically necessary connection data is processed, in particular IP address, date and time of access, requested URL, user agent, and other data required for delivery, stability, and security of the service.",
+    },
+    "Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO.": {
+        "en": "The legal basis is Article 6(1)(f) GDPR.",
+    },
+    "Konten und Profile": {"en": "Accounts and Profiles"},
+    "Bei der Registrierung und Nutzung eines Kontos verarbeiten wir Benutzername, Anzeigename, E-Mail-Adresse, Passwort-Hash sowie freiwillige Profildaten wie Bio, GitHub-Link und Organisation.": {
+        "en": "When registering and using an account, we process username, display name, email address, password hash, and optional profile data such as bio, GitHub link, and organization.",
+    },
+    "Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO.": {
+        "en": "The legal basis is Article 6(1)(b) GDPR.",
+    },
+    "Login, Sessions und Passwort-Reset": {"en": "Login, Sessions, and Password Reset"},
+    "Fuer die Anmeldung wird ein Session-Token verarbeitet und in einem Cookie gespeichert. Zusaetzlich werden Sitzungsdaten wie User-Agent, Erstellungszeitpunkt und Ablaufzeit verarbeitet. Bei einem Passwort-Reset werden die angegebene E-Mail-Adresse sowie ein zeitlich begrenztes Reset-Token verarbeitet.": {
+        "en": "For login, a session token is processed and stored in a cookie. In addition, session data such as user agent, creation time, and expiry time are processed. For password reset, the provided email address and a time-limited reset token are processed.",
+    },
+    "Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO sowie Art. 6 Abs. 1 lit. f DSGVO.": {
+        "en": "The legal basis is Article 6(1)(b) GDPR and Article 6(1)(f) GDPR.",
+    },
+    "Oeffentlich sichtbare Profildaten": {"en": "Publicly Visible Profile Data"},
+    "Oeffentlich angezeigt werden je nach Plattformbereich insbesondere Anzeigename, Benutzername, Bio, Organisation, GitHub-Link sowie die zugeordneten Engines und Aktivitaeten auf der Plattform. E-Mail-Adressen werden nicht oeffentlich angezeigt.": {
+        "en": "Depending on the platform area, publicly visible data may include display name, username, bio, organization, GitHub link, and assigned engines and activity on the platform. Email addresses are not displayed publicly.",
+    },
+    "Cookies": {"en": "Cookies"},
+    "Diese Website verwendet derzeit keine Analyse-, Tracking- oder Marketing-Cookies.": {
+        "en": "This website currently does not use analytics, tracking, or marketing cookies.",
+    },
+    "technisch notwendiges Login-Cookie, Speicherdauer bis zu 30 Tage oder bis zum Logout.": {
+        "en": "technically necessary login cookie, stored for up to 30 days or until logout.",
+    },
+    "speichert das von dir aktiv ausgewaehlte Theme, Speicherdauer bis zu 12 Monate.": {
+        "en": "stores the theme you actively selected, for up to 12 months.",
+    },
+    "speichert die von dir aktiv ausgewaehlte Sprache, Speicherdauer bis zu 12 Monate.": {
+        "en": "stores the language you actively selected, for up to 12 months.",
+    },
+    "Die Preference-Cookies werden nur gesetzt, wenn du die jeweilige Einstellung aktiv auswaehlst. Sollte spaeter Analyse- oder Marketing-Technik hinzukommen, ist vor deren Einsatz eine gesonderte Einwilligung erforderlich.": {
+        "en": "Preference cookies are only set if you actively choose the respective setting. If analytics or marketing technology is added later, separate consent will be required before use.",
+    },
+    "Speicherdauer": {"en": "Storage Period"},
+    "Kontodaten speichern wir grundsaetzlich fuer die Dauer des Nutzerverhaeltnisses.": {
+        "en": "We generally store account data for the duration of the user relationship.",
+    },
+    "Session-Daten laufen spaetestens nach 30 Tagen ab.": {
+        "en": "Session data expires after 30 days at the latest.",
+    },
+    "Passwort-Reset-Tokens laufen spaetestens nach 3 Stunden ab.": {
+        "en": "Password reset tokens expire after 3 hours at the latest.",
+    },
+    "Theme- und Sprach-Cookies laufen spaetestens nach 12 Monaten ab.": {
+        "en": "Theme and language cookies expire after 12 months at the latest.",
+    },
+    "Empfaenger": {"en": "Recipients"},
+    "Eine Weitergabe personenbezogener Daten an Dritte erfolgt nicht zu Werbezwecken. Soweit fuer den technischen Betrieb Hosting- oder Infrastruktur-Dienstleister eingesetzt werden, erfolgt eine Verarbeitung nur im jeweils erforderlichen Umfang.": {
+        "en": "Personal data is not shared with third parties for advertising purposes. If hosting or infrastructure providers are used for technical operation, processing only takes place to the extent necessary.",
+    },
+    "Deine Rechte": {"en": "Your Rights"},
+    "Dir stehen die Rechte auf Auskunft, Berichtigung, Loeschung, Einschraenkung der Verarbeitung, Datenuebertragbarkeit sowie Widerspruch nach Massgabe der DSGVO zu. Ausserdem hast du das Recht, dich bei einer Datenschutzaufsichtsbehoerde zu beschweren.": {
+        "en": "You have the rights of access, rectification, erasure, restriction of processing, data portability, and objection in accordance with the GDPR. You also have the right to lodge a complaint with a data protection supervisory authority.",
+    },
     "Verantwortlich fuer den Inhalt nach § 18 Abs. 2 MStV": {
         "en": "Responsible for content pursuant to Section 18 para. 2 MStV",
     },

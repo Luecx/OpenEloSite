@@ -136,7 +136,6 @@ code {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  padding-bottom: 48px;
 }
 
 .site-header {
@@ -344,7 +343,7 @@ code {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 18px 0 0;
+  padding: 18px 0 24px;
 }
 
 .site-footer-copy {

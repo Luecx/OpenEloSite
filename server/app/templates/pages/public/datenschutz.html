@@ -4,9 +4,9 @@
   <section class="section">
     <div class="page-hero page-hero--full">
       <div class="meta-stack">
-        <p class="eyebrow">Datenschutz</p>
-        <h1>Datenschutzerklaerung</h1>
-        <p class="muted">Uebersicht ueber die Verarbeitung personenbezogener Daten in diesem Angebot.</p>
+        <p class="eyebrow">{{ tr("Datenschutz") }}</p>
+        <h1>{{ tr("Datenschutzerklaerung") }}</h1>
+        <p class="muted">{{ tr("Uebersicht ueber die Verarbeitung personenbezogener Daten in diesem Angebot.") }}</p>
       </div>
     </div>
   </section>
@@ -15,7 +15,7 @@
     <article class="prose-card legal-notice">
       <div class="stack">
         <section>
-          <h2>Verantwortlicher</h2>
+          <h2>{{ tr("Verantwortlicher") }}</h2>
           <address>
             {{ settings.legal_notice_name }}<br />
             {{ settings.legal_notice_street }}<br />
@@ -23,91 +23,79 @@
             {{ settings.legal_notice_country }}
           </address>
           <p>
-            E-Mail:
+            {{ tr("E-Mail") }}:
             <a href="mailto:{{ settings.legal_notice_email }}">{{ settings.legal_notice_email }}</a><br />
-            Telefon:
+            {{ tr("Telefon") }}:
             <a href="tel:{{ settings.legal_notice_phone | replace(' ', '') }}">{{ settings.legal_notice_phone }}</a>
           </p>
         </section>
 
         <section>
-          <h2>Zugriff auf die Website</h2>
+          <h2>{{ tr("Zugriff auf die Website") }}</h2>
           <p>
-            Beim Aufruf der Website werden technisch notwendige Verbindungsdaten verarbeitet, insbesondere IP-Adresse,
-            Datum und Uhrzeit des Abrufs, angeforderte URL, User-Agent sowie weitere Daten, die fuer die Auslieferung,
-            Stabilitaet und Sicherheit des Angebots erforderlich sind.
+            {{ tr("Beim Aufruf der Website werden technisch notwendige Verbindungsdaten verarbeitet, insbesondere IP-Adresse, Datum und Uhrzeit des Abrufs, angeforderte URL, User-Agent sowie weitere Daten, die fuer die Auslieferung, Stabilitaet und Sicherheit des Angebots erforderlich sind.") }}
           </p>
-          <p>Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO.</p>
+          <p>{{ tr("Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO.") }}</p>
         </section>
 
         <section>
-          <h2>Konten und Profile</h2>
+          <h2>{{ tr("Konten und Profile") }}</h2>
           <p>
-            Bei der Registrierung und Nutzung eines Kontos verarbeiten wir Benutzername, Anzeigename, E-Mail-Adresse,
-            Passwort-Hash sowie freiwillige Profildaten wie Bio, GitHub-Link und Organisation.
+            {{ tr("Bei der Registrierung und Nutzung eines Kontos verarbeiten wir Benutzername, Anzeigename, E-Mail-Adresse, Passwort-Hash sowie freiwillige Profildaten wie Bio, GitHub-Link und Organisation.") }}
           </p>
-          <p>Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO.</p>
+          <p>{{ tr("Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO.") }}</p>
         </section>
 
         <section>
-          <h2>Login, Sessions und Passwort-Reset</h2>
+          <h2>{{ tr("Login, Sessions und Passwort-Reset") }}</h2>
           <p>
-            Fuer die Anmeldung wird ein Session-Token verarbeitet und in einem Cookie gespeichert. Zusaetzlich werden
-            Sitzungsdaten wie User-Agent, Erstellungszeitpunkt und Ablaufzeit verarbeitet. Bei einem Passwort-Reset
-            werden die angegebene E-Mail-Adresse sowie ein zeitlich begrenztes Reset-Token verarbeitet.
+            {{ tr("Fuer die Anmeldung wird ein Session-Token verarbeitet und in einem Cookie gespeichert. Zusaetzlich werden Sitzungsdaten wie User-Agent, Erstellungszeitpunkt und Ablaufzeit verarbeitet. Bei einem Passwort-Reset werden die angegebene E-Mail-Adresse sowie ein zeitlich begrenztes Reset-Token verarbeitet.") }}
           </p>
-          <p>Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO sowie Art. 6 Abs. 1 lit. f DSGVO.</p>
+          <p>{{ tr("Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO sowie Art. 6 Abs. 1 lit. f DSGVO.") }}</p>
         </section>
 
         <section>
-          <h2>Oeffentlich sichtbare Profildaten</h2>
+          <h2>{{ tr("Oeffentlich sichtbare Profildaten") }}</h2>
           <p>
-            Oeffentlich angezeigt werden je nach Plattformbereich insbesondere Anzeigename, Benutzername, Bio,
-            Organisation, GitHub-Link sowie die zugeordneten Engines und Aktivitaeten auf der Plattform. E-Mail-Adressen
-            werden nicht oeffentlich angezeigt.
+            {{ tr("Oeffentlich angezeigt werden je nach Plattformbereich insbesondere Anzeigename, Benutzername, Bio, Organisation, GitHub-Link sowie die zugeordneten Engines und Aktivitaeten auf der Plattform. E-Mail-Adressen werden nicht oeffentlich angezeigt.") }}
           </p>
-          <p>Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO sowie Art. 6 Abs. 1 lit. f DSGVO.</p>
+          <p>{{ tr("Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO sowie Art. 6 Abs. 1 lit. f DSGVO.") }}</p>
         </section>
 
         <section>
-          <h2>Cookies</h2>
-          <p>Diese Website verwendet derzeit keine Analyse-, Tracking- oder Marketing-Cookies.</p>
+          <h2>{{ tr("Cookies") }}</h2>
+          <p>{{ tr("Diese Website verwendet derzeit keine Analyse-, Tracking- oder Marketing-Cookies.") }}</p>
           <ul>
-            <li><code>openeelo_session</code>: technisch notwendiges Login-Cookie, Speicherdauer bis zu 30 Tage oder bis zum Logout.</li>
-            <li><code>openeelo_theme</code>: speichert das von dir aktiv ausgewaehlte Theme, Speicherdauer bis zu 12 Monate.</li>
-            <li><code>openeelo_lang</code>: speichert die von dir aktiv ausgewaehlte Sprache, Speicherdauer bis zu 12 Monate.</li>
+            <li><code>openeelo_session</code>: {{ tr("technisch notwendiges Login-Cookie, Speicherdauer bis zu 30 Tage oder bis zum Logout.") }}</li>
+            <li><code>openeelo_theme</code>: {{ tr("speichert das von dir aktiv ausgewaehlte Theme, Speicherdauer bis zu 12 Monate.") }}</li>
+            <li><code>openeelo_lang</code>: {{ tr("speichert die von dir aktiv ausgewaehlte Sprache, Speicherdauer bis zu 12 Monate.") }}</li>
           </ul>
           <p>
-            Die Preference-Cookies werden nur gesetzt, wenn du die jeweilige Einstellung aktiv auswaehlst. Sollte spaeter
-            Analyse- oder Marketing-Technik hinzukommen, ist vor deren Einsatz eine gesonderte Einwilligung erforderlich.
+            {{ tr("Die Preference-Cookies werden nur gesetzt, wenn du die jeweilige Einstellung aktiv auswaehlst. Sollte spaeter Analyse- oder Marketing-Technik hinzukommen, ist vor deren Einsatz eine gesonderte Einwilligung erforderlich.") }}
           </p>
         </section>
 
         <section>
-          <h2>Speicherdauer</h2>
+          <h2>{{ tr("Speicherdauer") }}</h2>
           <ul>
-            <li>Kontodaten speichern wir grundsaetzlich fuer die Dauer des Nutzerverhaeltnisses.</li>
-            <li>Session-Daten laufen spaetestens nach 30 Tagen ab.</li>
-            <li>Passwort-Reset-Tokens laufen spaetestens nach 3 Stunden ab.</li>
-            <li>Theme- und Sprach-Cookies laufen spaetestens nach 12 Monaten ab.</li>
+            <li>{{ tr("Kontodaten speichern wir grundsaetzlich fuer die Dauer des Nutzerverhaeltnisses.") }}</li>
+            <li>{{ tr("Session-Daten laufen spaetestens nach 30 Tagen ab.") }}</li>
+            <li>{{ tr("Passwort-Reset-Tokens laufen spaetestens nach 3 Stunden ab.") }}</li>
+            <li>{{ tr("Theme- und Sprach-Cookies laufen spaetestens nach 12 Monaten ab.") }}</li>
           </ul>
         </section>
 
         <section>
-          <h2>Empfaenger</h2>
+          <h2>{{ tr("Empfaenger") }}</h2>
           <p>
-            Eine Weitergabe personenbezogener Daten an Dritte erfolgt nicht zu Werbezwecken. Soweit fuer den technischen
-            Betrieb Hosting- oder Infrastruktur-Dienstleister eingesetzt werden, erfolgt eine Verarbeitung nur im jeweils
-            erforderlichen Umfang.
+            {{ tr("Eine Weitergabe personenbezogener Daten an Dritte erfolgt nicht zu Werbezwecken. Soweit fuer den technischen Betrieb Hosting- oder Infrastruktur-Dienstleister eingesetzt werden, erfolgt eine Verarbeitung nur im jeweils erforderlichen Umfang.") }}
           </p>
         </section>
 
         <section>
-          <h2>Deine Rechte</h2>
+          <h2>{{ tr("Deine Rechte") }}</h2>
           <p>
-            Dir stehen die Rechte auf Auskunft, Berichtigung, Loeschung, Einschraenkung der Verarbeitung, Datenuebertragbarkeit
-            sowie Widerspruch nach Massgabe der DSGVO zu. Ausserdem hast du das Recht, dich bei einer Datenschutzaufsichtsbehoerde
-            zu beschweren.
+            {{ tr("Dir stehen die Rechte auf Auskunft, Berichtigung, Loeschung, Einschraenkung der Verarbeitung, Datenuebertragbarkeit sowie Widerspruch nach Massgabe der DSGVO zu. Ausserdem hast du das Recht, dich bei einer Datenschutzaufsichtsbehoerde zu beschweren.") }}
           </p>
         </section>
       </div>
