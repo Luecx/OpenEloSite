@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <section class="section">
+    <div class="page-hero page-hero--full">
+      <div class="meta-stack">
+        <p class="eyebrow">{{ tr("Angaben gemaess § 5 DDG") }}</p>
+        <h1>{{ tr("Impressum") }}</h1>
+        <p class="muted">{{ tr("Kontakt- und Anbieterkennzeichnung fuer dieses Angebot.") }}</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <article class="prose-card legal-notice">
+      <div class="stack">
+        <section>
+          <h2>{{ tr("Anbieter") }}</h2>
+          <address>
+            {{ settings.legal_notice_name }}<br />
+            {{ settings.legal_notice_street }}<br />
+            {{ settings.legal_notice_postal_city }}<br />
+            {{ settings.legal_notice_country }}
+          </address>
+        </section>
+
+        <section>
+          <h2>{{ tr("Kontakt") }}</h2>
+          <p>
+            E-Mail:
+            <a href="mailto:{{ settings.legal_notice_email }}">{{ settings.legal_notice_email }}</a>
+          </p>
+          <p>
+            Telefon:
+            <a href="tel:{{ settings.legal_notice_phone | replace(' ', '') }}">{{ settings.legal_notice_phone }}</a>
+          </p>
+        </section>
+
+        <section>
+          <h2>{{ tr("Verantwortlich fuer den Inhalt nach § 18 Abs. 2 MStV") }}</h2>
+          <p>
+            {{ settings.legal_notice_name }}<br />
+            {{ settings.legal_notice_street }}<br />
+            {{ settings.legal_notice_postal_city }}<br />
+            {{ settings.legal_notice_country }}
+          </p>
+        </section>
+      </div>
+    </article>
+  </section>
+{% endblock %}

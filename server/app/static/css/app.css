@@ -133,6 +133,9 @@ code {
 }
 
 .app-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
   padding-bottom: 48px;
 }
 
@@ -325,7 +328,42 @@ code {
 }
 
 .main-content {
+  flex: 1 0 auto;
   padding: 26px 0 0;
+}
+
+.site-footer {
+  margin-top: 28px;
+  border-top: 1px solid var(--line);
+  background: color-mix(in srgb, var(--surface) 84%, transparent 16%);
+}
+
+.site-footer-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 0 0;
+}
+
+.site-footer-copy {
+  margin: 0;
+}
+
+.site-footer-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.site-footer-links a {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.site-footer-links a:hover {
+  color: var(--text);
 }
 
 .checklist-grid {
@@ -684,6 +722,35 @@ code {
 .compact-form {
   display: grid;
   gap: 12px;
+}
+
+.legal-notice {
+  max-width: 760px;
+}
+
+.legal-notice section {
+  display: grid;
+  gap: 8px;
+}
+
+.legal-notice h2 {
+  margin-bottom: 0;
+}
+
+.legal-notice p,
+.legal-notice address {
+  margin: 0;
+  line-height: 1.65;
+}
+
+.legal-notice address {
+  font-style: normal;
+}
+
+.legal-notice ul {
+  margin: 0;
+  padding-left: 1.2rem;
+  line-height: 1.65;
 }
 
 label {

@@ -70,6 +70,18 @@ _TRANSLATIONS = {
     "Books": {"en": "Books"},
     "Engines": {"en": "Engines"},
     "Rating-Listen": {"en": "Rating Lists"},
+    "Rechtliches": {"en": "Legal"},
+    "Impressum": {"en": "Legal Notice"},
+    "Datenschutz": {"en": "Privacy"},
+    "Kontakt- und Anbieterkennzeichnung fuer dieses Angebot.": {
+        "en": "Provider and contact information for this service.",
+    },
+    "Angaben gemaess § 5 DDG": {"en": "Information pursuant to Section 5 DDG"},
+    "Anbieter": {"en": "Provider"},
+    "Kontakt": {"en": "Contact"},
+    "Verantwortlich fuer den Inhalt nach § 18 Abs. 2 MStV": {
+        "en": "Responsible for content pursuant to Section 18 para. 2 MStV",
+    },
     "Start": {"en": "Home"},
     "Login": {"en": "Login"},
     "Registrierung": {"en": "Register"},

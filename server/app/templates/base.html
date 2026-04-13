@@ -96,6 +96,16 @@
 
         {% block content %}{% endblock %}
       </main>
+
+      <footer class="site-footer">
+        <div class="wrap site-footer-row">
+          <p class="muted site-footer-copy">{{ settings.app_name }}</p>
+          <nav class="site-footer-links" aria-label="{{ tr('Rechtliches') }}">
+            <a href="/impressum">{{ tr("Impressum") }}</a>
+            <a href="/datenschutz">{{ tr("Datenschutz") }}</a>
+          </nav>
+        </div>
+      </footer>
     </div>
     <script>
       (function () {

@@ -116,6 +116,26 @@ def home(request: Request, db: Session = Depends(get_db), current_user=Depends(g
     return templates.TemplateResponse("pages/public/home.html", context)
 
 
+@router.get("/impressum")
+def legal_notice(request: Request, current_user=Depends(get_current_user_optional)):
+    context = build_context(
+        request,
+        current_user,
+        page_title="Impressum",
+    )
+    return templates.TemplateResponse("pages/public/impressum.html", context)
+
+
+@router.get("/datenschutz")
+def privacy_policy(request: Request, current_user=Depends(get_current_user_optional)):
+    context = build_context(
+        request,
+        current_user,
+        page_title="Datenschutz",
+    )
+    return templates.TemplateResponse("pages/public/datenschutz.html", context)
+
+
 @router.get("/engines")
 def engines(
     request: Request,

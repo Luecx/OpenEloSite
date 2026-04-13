@@ -22,7 +22,7 @@
             <tr>
               <td>
                 <a href="{{ '/profile' if current_user and current_user.id == user.id else '/users/' ~ user.id }}">{{ user.display_name }}</a><br />
-                <span class="muted">{{ user.username }} | {{ user.email }}</span>
+                <span class="muted">{{ user.username }}</span>
               </td>
               <td>
                 <div class="role-cell">
